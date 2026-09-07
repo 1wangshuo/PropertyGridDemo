@@ -1,0 +1,41 @@
+<Application x:Class="PropertyGridDemo.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:local="clr-namespace:PropertyGridDemo.Models"
+             xmlns:conv="clr-namespace:PropertyGridLib.Converters;assembly=PropertyGridLib"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/SkinDefault.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/HandyControl;component/Themes/Theme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <conv:ObjectToTypeConverter x:Key="ObjToType"/>
+            <conv:InverseBoolConverter x:Key="InverseBool"/>
+
+            <DataTemplate x:Key="DemoTimeSpanEditorTemplate">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <hc:NumericUpDown Grid.Column="0"
+                                      Value="{Binding ValueString, Converter={StaticResource ObjToType}, UpdateSourceTrigger=LostFocus, FallbackValue=0}"
+                                      IsReadOnly="{Binding IsReadOnly}"
+                                      VerticalContentAlignment="Center"
+                                      Margin="0,0,4,0"/>
+                    <ComboBox Grid.Column="1"
+                              x:Name="UnitCombo"
+                              IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                              VerticalContentAlignment="Center"
+                              MinWidth="50"
+                              MaxWidth="80"
+                              Loaded="UnitCombo_Loaded"
+                              SelectionChanged="UnitCombo_SelectionChanged"/>
+                </Grid>
+            </DataTemplate>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
