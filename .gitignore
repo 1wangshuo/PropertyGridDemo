@@ -1,0 +1,24 @@
+## 旧 github 仓库备份（确认无误后可自行删除）
+.git.github.bak/
+
+## Visual Studio / MSBuild 生成物
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+*.userprefs
+*.userosscache
+*.sln.docstates
+UpgradeLog*.htm
+TestResults/
+*.VisualState.xml
+
+## VS Code
+.vscode/
+
+## Windows / macOS 噪音文件
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store

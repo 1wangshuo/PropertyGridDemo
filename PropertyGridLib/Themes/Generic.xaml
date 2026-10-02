@@ -1,0 +1,1630 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:hc="https://handyorg.github.io/handycontrol"
+    xmlns:local="clr-namespace:PropertyGridLib.Controls"
+    xmlns:pg="clr-namespace:PropertyGridLib"
+    xmlns:conv="clr-namespace:PropertyGridLib.Converters"
+    xmlns:loc="clr-namespace:PropertyGridLib.Localization">
+
+    <!-- 转换器 -->
+    <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+    <conv:BoolToHiddenVisibilityConverter x:Key="BoolToHiddenVis"/>
+    <conv:InverseBoolConverter x:Key="InverseBool"/>
+    <conv:FirstLineConverter x:Key="FirstLine"/>
+    <conv:NullToVisibilityConverter x:Key="NullToVis"/>
+    <conv:IsNoneToVisibilityConverter x:Key="IsNoneVis"/>
+    <conv:AndVisConverter x:Key="AndVis"/>
+    <conv:IntToDoubleConverter x:Key="IntToDouble"/>
+    <conv:DateTimeConverter x:Key="DateTimeConv"/>
+    <conv:ObjectToTypeConverter x:Key="ObjToType"/>
+    <conv:FontSizeOffsetConverter x:Key="FontSizeOffset"/>
+    <conv:ColorToBrushConverter x:Key="ColorToBrush"/>
+
+    <!-- Popup 阴影效果 -->
+    <DropShadowEffect x:Key="PopupShadowEffect"
+                      BlurRadius="10"
+                      ShadowDepth="2"
+                      Opacity="0.3"
+                      Color="Black"/>
+    
+
+    
+    <!-- ========== 圆角图标按钮样式（透明背景 + 悬停圆角高亮 + 主题前景色） ========== -->
+    <Style x:Key="IconToggleButtonStyle" TargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            BorderThickness="0">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource RegionBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="IconButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Root"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            BorderThickness="0">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Root" Property="Background" Value="{DynamicResource RegionBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Root" Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ExpandToggleButtonStyle" TargetType="ToggleButton" BasedOn="{StaticResource IconToggleButtonStyle}">
+        <!-- 嵌套结构的展开箭头：字体 ▶（收起）/ ▼（展开）。固定 26×26 + 字号 14：
+             尺寸统一（不再随字符渲染盒忽大忽小），且保持小巧。 -->
+        <Setter Property="Width" Value="26"/>
+        <Setter Property="Height" Value="26"/>
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Content" Value="&#x25B6;"/>
+        <Style.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+                <Setter Property="Content" Value="&#x25BC;"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- FormulaTreeNode 层级模板 -->
+    <HierarchicalDataTemplate DataType="{x:Type local:FormulaTreeNode}"
+                              ItemsSource="{Binding Children}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding Header}"/>
+            <!-- 类型提示(如 “(int)”)：宿主未填 FormulaType 时 TypeHint 为 null，不显示；
+                 PropertyGrid.ShowTypeHint 开关关闭时也不显示 -->
+            <TextBlock Grid.Column="2" Text="{Binding TypeHint}"
+                       Margin="6,0,0,0"
+                       FontStyle="Italic"
+                       Foreground="{DynamicResource InfoBrush}">
+                <TextBlock.Visibility>
+                    <MultiBinding Converter="{StaticResource AndVis}">
+                        <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
+                        <Binding Path="ShowTypeHint" RelativeSource="{RelativeSource AncestorType=pg:PropertyGrid}"
+                                 Converter="{StaticResource BoolToVis}"/>
+                    </MultiBinding>
+                </TextBlock.Visibility>
+            </TextBlock>
+        </Grid>
+    </HierarchicalDataTemplate>
+
+    <!-- 编辑器模板选择器 -->
+    <local:EditorTemplateSelector x:Key="EditorSelector">
+        <local:EditorTemplateSelector.StringTemplate>
+            <DataTemplate>
+                <TextBox Text="{Binding ValueString, UpdateSourceTrigger=LostFocus, FallbackValue=''}"
+                         IsReadOnly="{Binding IsReadOnly}"
+                         VerticalContentAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.StringTemplate>
+
+        <local:EditorTemplateSelector.BooleanTemplate>
+            <DataTemplate>
+                <ToggleButton IsChecked="{Binding Value, Converter={StaticResource ObjToType}, FallbackValue=false}"
+                              IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                              Style="{DynamicResource ToggleButtonSwitch}"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.BooleanTemplate>
+
+        <!-- [ToggleSwitch] 特性：bool 专用开关编辑器 —— 滑块式开关（圆角轨道 + 圆形滑块）+ 可选的 开/关 状态文字。
+             水平对齐跟随宿主编辑器 ContentControl 的 HorizontalContentAlignment：
+             基类 PropertyGrid 默认 Left（编辑器占满整行，开关靠左，与历史行为一致）；
+             Pro 卡片编辑器右对齐（HorizontalContentAlignment=Right），开关+状态文字随之靠右。 -->
+        <local:EditorTemplateSelector.ToggleSwitchTemplate>
+            <DataTemplate>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="{Binding HorizontalContentAlignment, RelativeSource={RelativeSource AncestorType=ContentControl}, FallbackValue=Left}"
+                            VerticalAlignment="Center">
+                    <ToggleButton IsChecked="{Binding Value, Mode=TwoWay, Converter={StaticResource ObjToType}, FallbackValue=false}"
+                                  IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                                  Style="{DynamicResource ToggleButtonSwitch}"
+                                  VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ToggleStateText}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               Visibility="{Binding ToggleStateTextVisibility}"
+                               Margin="8,0,0,0"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </DataTemplate>
+        </local:EditorTemplateSelector.ToggleSwitchTemplate>
+
+        <!-- [MultilineText] 特性：string 专用多行文本编辑器 —— 行内单行只读预览 + … 按钮，
+             点击弹出多行富文本编辑窗口（Wrap + 回车 + 滚动）。行内等高，不破坏虚拟化估算。 -->
+        <local:EditorTemplateSelector.MultilineTextTemplate>
+            <DataTemplate>
+                <local:MultilineTextControl DataContext="{Binding}"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.MultilineTextTemplate>
+
+        <local:EditorTemplateSelector.NumberTemplate>
+            <DataTemplate>
+                <hc:NumericUpDown Value="{Binding ValueString, Converter={StaticResource ObjToType}, UpdateSourceTrigger=LostFocus, FallbackValue=0}"
+                                  IsReadOnly="{Binding IsReadOnly}"
+                                  VerticalContentAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.NumberTemplate>
+
+        <local:EditorTemplateSelector.EnumTemplate>
+            <DataTemplate>
+                <!-- 枚举显示项：[Description] 原文经翻译（默认中文），无特性回退成员名 -->
+                <ComboBox ItemsSource="{Binding EnumDisplayItems}"
+                          SelectedItem="{Binding EnumSelectedItem, Mode=TwoWay, FallbackValue=null}"
+                          IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                          VerticalContentAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.EnumTemplate>
+
+        <local:EditorTemplateSelector.DateTimeTemplate>
+            <DataTemplate>
+                <hc:DateTimePicker SelectedDateTime="{Binding Value, Converter={StaticResource DateTimeConv}, FallbackValue=null}"
+                                   IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                                   VerticalContentAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.DateTimeTemplate>
+
+        <local:EditorTemplateSelector.FilePathTemplate>
+            <DataTemplate>
+                <!-- 路径选择控件（可独立使用的 SDK 控件）：文本框 + 浏览按钮 -->
+                <local:FilePathControl
+                    Text="{Binding ValueString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=''}"
+                    Filter="{Binding FileFilter}"
+                    IsReadOnly="{Binding IsReadOnly}"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.FilePathTemplate>
+
+        <local:EditorTemplateSelector.DirectoryPathTemplate>
+            <DataTemplate>
+                <!-- 目录选择控件（SelectDirectory=true 走目录浏览器） -->
+                <local:FilePathControl
+                    Text="{Binding ValueString, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, FallbackValue=''}"
+                    SelectDirectory="True"
+                    IsReadOnly="{Binding IsReadOnly}"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.DirectoryPathTemplate>
+
+        <local:EditorTemplateSelector.CollectionTemplate>
+            <DataTemplate>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding ValueString}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1"
+                            Content="..."
+                            MinWidth="30"
+                            Width="auto"
+                            Margin="4,0,0,0"
+                            Command="{Binding EditCollectionCommand}"/>
+                </Grid>
+            </DataTemplate>
+        </local:EditorTemplateSelector.CollectionTemplate>
+
+        <!-- 字典（IDictionary）：显示条目数 + “...”按钮，点击打开 DictionaryEditorDialog -->
+        <local:EditorTemplateSelector.DictionaryTemplate>
+            <DataTemplate>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding ValueString}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               VerticalAlignment="Center"/>
+                    <Button Grid.Column="1"
+                            Content="..."
+                            MinWidth="30"
+                            Width="auto"
+                            Margin="4,0,0,0"
+                            Command="{Binding EditCollectionCommand}"/>
+                </Grid>
+            </DataTemplate>
+        </local:EditorTemplateSelector.DictionaryTemplate>
+
+        <local:EditorTemplateSelector.SliderTemplate>
+            <DataTemplate>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0"
+                            Value="{Binding Value, Converter={StaticResource IntToDouble}, FallbackValue=0, TargetNullValue=0}"
+                            Minimum="{Binding SliderMinimum}"
+                            Maximum="{Binding SliderMaximum}"
+                            TickFrequency="{Binding SliderStep}"
+                            IsSnapToTickEnabled="True"
+                            VerticalAlignment="Center"
+                            IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"/>
+                    <!-- 数字输入框（ShowNumberBox=true 时显示），与滑块双向同步：
+                         Minimum/Maximum/Increment 跟随 NumberSlider 特性，
+                         键入与 +/- 步进都会被边界钳制；失焦提交避免中间输入反复解析 -->
+                    <hc:NumericUpDown Grid.Column="1"
+                                      Value="{Binding ValueString, Converter={StaticResource ObjToType}, UpdateSourceTrigger=LostFocus, FallbackValue=0}"
+                                      Minimum="{Binding SliderMinimum}"
+                                      Maximum="{Binding SliderMaximum}"
+                                      Increment="{Binding SliderStep}"
+                                      Width="Auto"
+                                      MinWidth="72"
+                                      MaxWidth="140"
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Margin="8,0,0,0"
+                                      Visibility="{Binding SliderShowNumberBox, Converter={StaticResource BoolToVis}}"
+                                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"/>
+                    <!-- 只读数值标签（默认显示；开启 ShowNumberBox 后由数字框取代） -->
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding ValueString}"
+                               Foreground="{DynamicResource PrimaryTextBrush}"
+                               VerticalAlignment="Center"
+                               Margin="8,0,0,0"
+                               Visibility="{Binding SliderShowNumberBox, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                </Grid>
+            </DataTemplate>
+        </local:EditorTemplateSelector.SliderTemplate>
+
+        <local:EditorTemplateSelector.DropDownTemplate>
+            <DataTemplate>
+                <ComboBox ItemsSource="{Binding StandardValues}"
+                          SelectedItem="{Binding Value, Mode=TwoWay, FallbackValue=null}"
+                          IsEditable="{Binding IsStandardValuesExclusive, Converter={StaticResource InverseBool}}"
+                          Text="{Binding ValueString, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                          IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                          VerticalContentAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.DropDownTemplate>
+
+        <local:EditorTemplateSelector.MultiSelectTemplate>
+            <DataTemplate>
+                <local:MultiSelectControl
+                    SelectedItems="{Binding Value, Mode=TwoWay}"
+                    IsReadOnly="{Binding IsReadOnly}"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.MultiSelectTemplate>
+
+        <!-- 命令按钮（[Button] 特性）：不显示值，点击触发 ButtonClickCommand → ButtonClicked 事件 -->
+        <local:EditorTemplateSelector.ButtonTemplate>
+            <DataTemplate>
+                <Button Content="{Binding ButtonText}"
+                        Command="{Binding ButtonClickCommand}"
+                        HorizontalAlignment="Left"
+                        MinWidth="88"
+                        Padding="14,4"
+                        VerticalContentAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.ButtonTemplate>
+
+        <local:EditorTemplateSelector.ExpandableTemplate>
+            <DataTemplate>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <ToggleButton Grid.Column="0"
+                                  Width="18" Height="18"
+                                  Padding="0" Margin="0,0,4,0"
+                                  IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                  FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
+                                  Style="{StaticResource ExpandToggleButtonStyle}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBox Grid.Column="1"
+                             Text="{Binding ValueString}"
+                             IsReadOnly="True"
+                             VerticalContentAlignment="Center"/>
+                </Grid>
+            </DataTemplate>
+        </local:EditorTemplateSelector.ExpandableTemplate>
+
+        <local:EditorTemplateSelector.ColorTemplate>
+            <DataTemplate>
+                <local:ColorEditControl DataContext="{Binding}"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.ColorTemplate>
+
+        <local:EditorTemplateSelector.DefaultTemplate>
+            <DataTemplate>
+                <!-- 纯文本只读值：必须显式 PrimaryTextBrush —— 不设时继承到的是默认黑，
+                     深色主题里值文本直接看不见（属性名同款画刷） -->
+                <TextBlock Text="{Binding ValueString}"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           VerticalAlignment="Center"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.DefaultTemplate>
+    </local:EditorTemplateSelector>
+
+    <!-- ========== FormulaBindingControl 样式 ========== -->
+    <Style TargetType="{x:Type local:FormulaBindingControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:FormulaBindingControl}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <hc:TextBox x:Name="PART_Input" Grid.Column="0"
+                                 Text="{Binding FormulaString, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                 IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
+                                 FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-1}"
+                                 Foreground="{DynamicResource SecondaryTextBrush}"
+                                 VerticalContentAlignment="Center"
+                                 hc:InfoElement.Placeholder="{loc:Localized FormulaPlaceholder}"/>
+                        <ToggleButton Grid.Column="1"
+                                      x:Name="PART_PopupButton"
+                                      Width="24" Height="24"
+                                      Padding="0" Margin="4,0,0,0"
+                                      Style="{StaticResource IconToggleButtonStyle}"
+                                      ToolTip="{loc:Localized SelectBindingSource}">
+                            <Path x:Name="PART_PopupIcon"
+                                  Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                  Fill="{DynamicResource PrimaryBrush}"
+                                  Width="14" Height="14"
+                                  Stretch="Uniform"/>
+                        </ToggleButton>
+                        <Popup x:Name="PART_Popup"
+                               IsOpen="{Binding IsChecked, ElementName=PART_PopupButton}"
+                               PlacementTarget="{Binding ElementName=PART_PopupButton}"
+                               StaysOpen="False"
+                               Width="300" Height="400">
+                            <Border Background="{DynamicResource RegionBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    TextElement.FontFamily="{Binding FontFamily, RelativeSource={RelativeSource TemplatedParent}}"
+                                    TextElement.FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="{loc:Localized SelectBindingSource}" FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextBrush}"
+                                               Margin="8,6,8,4"/>
+                                    <TreeView x:Name="PART_TreeView"
+                                              Grid.Row="1"
+                                              Background="Transparent"
+                                              BorderThickness="0"/>
+                                </Grid>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- 紧凑模式（PropertyGrid 行内覆盖式公式条）：输入框更小、占位简化、弹树按钮收窄 -->
+                        <DataTrigger Binding="{Binding Compact, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                            <Setter TargetName="PART_Input"
+                                    Property="FontSize"
+                                    Value="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"/>
+                            <Setter TargetName="PART_Input" Property="hc:InfoElement.Placeholder" Value="{loc:Localized FormulaPlaceholderCompact}"/>
+                            <Setter TargetName="PART_PopupButton" Property="Width" Value="20"/>
+                            <Setter TargetName="PART_PopupButton" Property="Height" Value="20"/>
+                            <Setter TargetName="PART_PopupButton" Property="Margin" Value="2,0,0,0"/>
+                            <Setter TargetName="PART_PopupIcon" Property="Width" Value="12"/>
+                            <Setter TargetName="PART_PopupIcon" Property="Height" Value="12"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== MultiSelectControl 样式 ========== -->
+    <Style TargetType="{x:Type local:MultiSelectControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:MultiSelectControl}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0"
+                                 Text="{Binding SummaryText, RelativeSource={RelativeSource TemplatedParent}}"
+                                 IsReadOnly="True"
+                                 VerticalContentAlignment="Center"
+                                 Foreground="{DynamicResource PrimaryTextBrush}"/>
+                        <ToggleButton Grid.Column="1"
+                                      x:Name="PART_PopupButton"
+                                      Width="24" Height="24"
+                                      Padding="0" Margin="4,0,0,0"
+                                      Style="{StaticResource IconToggleButtonStyle}"
+                                      ToolTip="{loc:Localized SelectMultiple}"
+                                      IsEnabled="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBool}}">
+                            <Path Data="M7,10 L12,15 L17,10"
+                                  Stroke="{DynamicResource PrimaryBrush}"
+                                  StrokeThickness="2"
+                                  Fill="Transparent"
+                                  Width="12" Height="12"
+                                  Stretch="Uniform"/>
+                        </ToggleButton>
+                        <Popup x:Name="PART_Popup"
+                               IsOpen="{Binding IsChecked, ElementName=PART_PopupButton}"
+                               PlacementTarget="{Binding ElementName=PART_PopupButton}"
+                               StaysOpen="False"
+                               Width="250" MaxHeight="400">
+                            <Border Background="{DynamicResource RegionBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Padding="4"
+                                    TextElement.FontFamily="{Binding FontFamily, RelativeSource={RelativeSource TemplatedParent}}"
+                                    TextElement.FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="{loc:Localized SelectItems}" FontWeight="Bold"
+                                               Foreground="{DynamicResource PrimaryTextBrush}"
+                                               Margin="4,2,4,4"/>
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <ItemsControl x:Name="PART_CheckBoxList">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <CheckBox Content="{Binding Text}"
+                                                              IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                              Margin="4,2"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== MultilineTextControl 样式（[MultilineText] 特性） ==========
+         行内：单行只读预览（与普通 TextBox 同尺寸，保持行高一致）+ … 按钮。
+         编辑：点击按钮弹窗多行富文本（控件代码内构建），不改变行内布局。 -->
+    <Style TargetType="{x:Type local:MultilineTextControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:MultilineTextControl}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- 单行只读预览：首行 + 省略号（FirstLineConverter 剥掉 \n —— TextBlock/TextBox
+                             都会把 \n 渲染成真实换行，TextTrimming 只管横向截断，不剥换行预览框会
+                             竖向长到 4 行撑破卡片）；完整内容看 ToolTip / 点 … 弹窗编辑 -->
+                        <TextBlock Grid.Column="0"
+                                   Text="{Binding ValueString, Mode=OneWay, FallbackValue='', Converter={StaticResource FirstLine}}"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center"
+                                   ToolTip="{Binding ValueString}"/>
+                        <!-- … 按钮（只读=只读浏览弹窗：正文只读、无确定；可编辑=编辑弹窗）。
+                              两种模式都保留按钮 —— 只读模式下用户仍需查看完整多行内容 -->
+                        <Button Grid.Column="1"
+                                x:Name="PART_OpenButton"
+                                Content="…"
+                                MinWidth="30"
+                                Margin="4,0,0,0"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== FilePathControl 样式（路径选择控件，可独立使用） ==========
+         单行文本框 + 「...」浏览按钮；SelectDirectory=false 选文件 / true 选目录。
+         只读时文本框只读、浏览按钮禁用。属性网格的 [FilePath]/[DirectoryPath] 编辑器内部即此控件。 -->
+    <Style TargetType="{x:Type local:FilePathControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:FilePathControl}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="PART_TextBox" Grid.Column="0"
+                                 Text="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
+                                 VerticalContentAlignment="Center"/>
+                        <Button x:Name="PART_BrowseButton" Grid.Column="1"
+                                Content="..."
+                                MinWidth="30"
+                                Margin="4,0,0,0"
+                                IsEnabled="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBool}}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== FormulaSwitchControl 样式（普通输入 ↔ 公式绑定 切换控件，可独立使用） ==========
+         普通模式：值输入框 + 🔗；点击 🔗（IsFormulaMode=true）整行切换为公式绑定条
+         （FormulaBindingControl：公式输入 + 公式树选择），再点切回普通输入。
+         只读时输入框只读、切换按钮禁用。属性行「普通值/公式绑定」覆盖式编辑即此交互模型。 -->
+    <Style TargetType="{x:Type local:FormulaSwitchControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:FormulaSwitchControl}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- 列0：普通输入框与公式绑定条随 IsFormulaMode 互斥显隐，只占一个 -->
+                        <hc:TextBox x:Name="PART_TextBox"
+                                    Grid.Column="0"
+                                    Text="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                    IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
+                                    hc:InfoElement.Placeholder="{Binding Placeholder, RelativeSource={RelativeSource TemplatedParent}}"
+                                    VerticalContentAlignment="Center"
+                                    Margin="0"
+                                    Visibility="{Binding IsFormulaMode, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                        <local:FormulaBindingControl x:Name="PART_FormulaBinding"
+                                                     Grid.Column="0"
+                                                     Compact="{Binding Compact, RelativeSource={RelativeSource TemplatedParent}}"
+                                                     FormulaString="{Binding FormulaString, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                     TreeItemsSource="{Binding TreeItemsSource, RelativeSource={RelativeSource TemplatedParent}}"
+                                                     FormulaTreeProvider="{Binding FormulaTreeProvider, RelativeSource={RelativeSource TemplatedParent}}"
+                                                     IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
+                                                     Visibility="{Binding IsFormulaMode, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"/>
+                        <!-- 列1：普通态显示 🔗 进入公式绑定，公式态显示 ✕ 退出 -->
+                        <Grid Grid.Column="1" Width="24" Margin="4,0,0,0">
+                            <Button x:Name="PART_SwitchButton"
+                                    Width="20" Height="20" HorizontalAlignment="Center" Padding="0"
+                                    IsEnabled="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBool}}"
+                                    ToolTip="{loc:Localized SelectBindingSource}"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    Visibility="{Binding IsFormulaMode, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                <Path Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                      Fill="{DynamicResource PrimaryBrush}"
+                                      Width="12" Height="12"
+                                      Stretch="Uniform"/>
+                            </Button>
+                            <Button x:Name="PART_CloseButton"
+                                    Width="20" Height="20" HorizontalAlignment="Center" Padding="0"
+                                    ToolTip="{loc:Localized CollapseBindingEditor}"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    Visibility="{Binding IsFormulaMode, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                                <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                      Fill="{DynamicResource PrimaryBrush}"
+                                      Width="12" Height="12"
+                                      Stretch="Uniform"/>
+                            </Button>
+                        </Grid>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== ColorEditControl 样式 ========== -->
+    <Style TargetType="{x:Type local:ColorEditControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:ColorEditControl}">
+                    <!-- 对齐 FilePath/Dictionary 等编辑器：TextBox + ... 按钮 -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <!-- 颜色预览 + 十六进制文本（TextBox 风格，占满宽度） -->
+                        <Border Grid.Column="0"
+                                x:Name="PART_ColorBorder"
+                                Height="28"
+                                Background="{DynamicResource RegionBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- 颜色预览块 -->
+                                <Border Grid.Column="0"
+                                        Width="14" Height="14"
+                                        Margin="6,0,6,0"
+                                        VerticalAlignment="Center"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="0.5"
+                                        Background="{Binding Value, Converter={StaticResource ColorToBrush}}"/>
+                                <!-- 十六进制文本 -->
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding ValueString}"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            </Grid>
+                        </Border>
+                        <!-- ... 按钮（点击弹出 ColorPicker） -->
+                        <Button Grid.Column="1"
+                                x:Name="PART_ColorButton"
+                                Content="..."
+                                MinWidth="30"
+                                Margin="4,0,0,0"
+                                IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== 性能优化：按需创建的两个行内可选区域 ==========
+         原实现用 Visibility 折叠这两块，但 WPF 的 Visibility 只是"不显示"，元素照样被实例化：
+         每次重建 80 个属性行 = 白建 80 个 FormulaBindingControl + 80 个空 ItemsControl，
+         而绝大多数属性既没有公式绑定、也没有展开子属性。改成 ContentTemplate 由触发器按需
+         应用后，用不到的行这两块完全不创建（零实例化开销），视觉与交互行为保持不变。 -->
+
+    <!-- 空模板：作为"不需要这部分内容"时的默认值。
+         注意绝不能用 ContentTemplate="{x:Null}" —— 那样 WPF 会退回查 PropertyItem 的隐式模板
+         （隐式模板内容是 ContentControl + PropertyRowTemplate），等于把整行再套一层，
+         形成无限递归 → StackOverflow（故障模块 WindowsBase、异常码 0xc00000fd）。 -->
+    <DataTemplate x:Key="EmptyRowTemplate"/>
+
+    <!-- 子属性已随扁平化列表（BuildFlatRows 递归展开）平铺进主 ItemsControl，
+         不再嵌套在父行内部 —— 嵌套巨行会让 Recycling 虚拟化估算乱跳（滚动条忽长忽短）。 -->
+
+    <!-- ========== 属性行模板（主层级） ========== -->
+    <DataTemplate x:Key="PropertyRowTemplate" DataType="{x:Type local:PropertyItem}">
+        <!-- 主属性行（Margin 绑定 RowMargin：左缩进随 Level 递增）
+             行高固定（名称 22 + 编辑器 34）：虚拟化面板按已实现行的实际高度估算列表总高度，
+             行高不固定时估算值随滚动位置波动 → 滚动条 thumb 忽长忽短。固定行高后估算稳定。
+             编辑器 34：HC NumericUpDown/TextBox 默认高 30，30 行内 VerticalAlignment=Center
+             会上下溢出 2px 盖住下一行（实测"不透明度"行溢出盖住"变换"行）——34 放得下。
+             公式列（列1）并入编辑器行：公式行不再额外占一行，所有行严格等高 56。 -->
+        <Grid Margin="{Binding RowMargin}" Background="Transparent" Height="56">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="22"/>
+                <RowDefinition Height="34"/>
+            </Grid.RowDefinitions>
+
+            <!-- 属性名（上方） -->
+            <TextBlock Grid.Row="0" Text="{Binding DisplayName}" Margin="8,0,4,0"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       FontWeight="{Binding TitleFontWeight, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
+                       VerticalAlignment="Center"/>
+
+            <!-- 编辑器 + 公式绑定按钮 + 复位按钮（下方，行高固定 30，编辑器居中不被拉伸） -->
+            <Grid Grid.Row="1" Margin="8,2,8,2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 编辑器（根据类型自动选择） -->
+                <ContentControl Grid.Column="0"
+                                Content="{Binding}"
+                                ContentTemplate="{x:Null}"
+                                ContentTemplateSelector="{StaticResource EditorSelector}"
+                                VerticalAlignment="Center"/>
+
+                <!-- 绑定按钮（仅 IsFormulaEnabled 的属性显示）：点击展开/收起覆盖式公式条。
+                     覆盖显示不参与行布局 → 行高恒定，虚拟化估算稳定（滚动条不抖动）。 -->
+                <Button Grid.Column="1" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                        Command="{Binding ToggleFormulaEditorCommand}"
+                        ToolTip="{loc:Localized SelectBindingSource}"
+                        Style="{StaticResource IconButtonStyle}"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsFormulaEnabled, Converter={StaticResource BoolToVis}}">
+                    <Path Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                          Fill="{DynamicResource PrimaryBrush}"
+                          Width="12" Height="12"
+                          Stretch="Uniform"/>
+                </Button>
+
+                <!-- 复位按钮（常驻占位：未修改时 Hidden，保留空间，编辑时布局不抖动） -->
+                <Button Grid.Column="2" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                        Content="R" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}" FontWeight="Bold"
+                        ToolTip="{loc:Localized ResetToDefault}"
+                        Command="{Binding ResetCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsModified, Converter={StaticResource BoolToHiddenVis}}"/>
+
+                <!-- 覆盖式公式条：绑定按钮展开时盖住编辑器+按钮区（背景=主题面板色，不透明，
+                     看起来原行消失）；条内右侧自带"收起"切换按钮，再点收起。不占布局 → 行高不变。
+                     注意：不能绑定 PropertyGrid.Background（宿主未设置时为 null → 透明，
+                     编辑器会透出造成"挤在一排"的假象）。 -->
+                <Border Grid.Column="0" Grid.ColumnSpan="3"
+                        Background="{DynamicResource RegionBrush}"
+                        Panel.ZIndex="10"
+                        Visibility="{Binding IsFormulaEditorOpen, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <local:FormulaBindingControl Grid.Column="0"
+                                                     Compact="True"
+                                                     FormulaString="{Binding FormulaString, Mode=TwoWay}"
+                                                     IsReadOnly="{Binding IsReadOnly}"/>
+                        <!-- 类型提示(如 "(int)"):淡蓝色斜体,与公式输入框内容颜色区分 -->
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding TypeHint}"
+                                   VerticalAlignment="Center"
+                                   Margin="6,0,0,0"
+                                   FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
+                                   FontStyle="Italic"
+                                   Foreground="{DynamicResource InfoBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding TypeHint}">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource AndVis}">
+                                    <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
+                                    <Binding Path="ShowTypeHint" RelativeSource="{RelativeSource AncestorType=pg:PropertyGrid}"
+                                             Converter="{StaticResource BoolToVis}"/>
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
+                        <!-- 收起切换按钮（绑定条内自带，再点收起） -->
+                        <Button Grid.Column="2" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                                Command="{Binding ToggleFormulaEditorCommand}"
+                                ToolTip="{loc:Localized CollapseBindingEditor}"
+                                Style="{StaticResource IconButtonStyle}"
+                                VerticalAlignment="Center">
+                            <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                  Fill="{DynamicResource PrimaryBrush}"
+                                  Width="12" Height="12"
+                                  Stretch="Uniform"/>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+    <!-- ========== Small / 紧凑布局：标题在左，编辑器在右（TitlePlacement=Left） ========== -->
+    <DataTemplate x:Key="PropertyRowTemplate_Left" DataType="{x:Type local:PropertyItem}">
+        <!-- 主属性行：标题在左，编辑器/公式列/复位在右
+             Height 固定 34：行高一致是虚拟化估算稳定的前提（滚动条不再忽长忽短）
+             公式列并入编辑器行（不再另起一行），行高恒 34。 -->
+        <Grid Margin="{Binding RowMargin}" Background="Transparent" Height="34">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 左侧：标题 + 修改红点（与 R 按钮逻辑一致） -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal"
+                        Margin="8,0,12,0" VerticalAlignment="Center">
+                <TextBlock Text="{Binding DisplayName}"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           FontWeight="{Binding TitleFontWeight, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+                <!-- 红点：值已被修改（未保存/可复位） -->
+                <Ellipse Width="6" Height="6" Margin="4,0,0,0"
+                         VerticalAlignment="Center"
+                         Fill="{DynamicResource DangerBrush}"
+                         Visibility="{Binding IsModified, Converter={StaticResource BoolToVis}}"/>
+            </StackPanel>
+
+            <!-- 右侧：值编辑器 + 绑定按钮 + 复位按钮（34 行内居中） -->
+            <Grid Grid.Column="1" Margin="8,0,8,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ContentControl Grid.Column="0"
+                                Content="{Binding}"
+                                ContentTemplate="{x:Null}"
+                                ContentTemplateSelector="{StaticResource EditorSelector}"
+                                VerticalAlignment="Center"/>
+
+                <!-- 绑定按钮（仅 IsFormulaEnabled）：点击展开/收起覆盖式公式条（不占布局，行高不变） -->
+                <Button Grid.Column="1" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                        Command="{Binding ToggleFormulaEditorCommand}"
+                        ToolTip="{loc:Localized SelectBindingSource}"
+                        Style="{StaticResource IconButtonStyle}"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsFormulaEnabled, Converter={StaticResource BoolToVis}}">
+                    <Path Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                          Fill="{DynamicResource PrimaryBrush}"
+                          Width="12" Height="12"
+                          Stretch="Uniform"/>
+                </Button>
+
+                <!-- 复位按钮（常驻占位：未修改时 Hidden，保留空间，编辑时布局不抖动） -->
+                <Button Grid.Column="2" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                        Content="R" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}" FontWeight="Bold"
+                        ToolTip="{loc:Localized ResetToDefault}"
+                        Command="{Binding ResetCommand}"
+                        Style="{StaticResource IconButtonStyle}"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding IsModified, Converter={StaticResource BoolToHiddenVis}}"/>
+
+                <!-- 覆盖式公式条：绑定按钮展开时盖住编辑器+按钮区（背景=主题面板色，不透明，
+                     看起来原行消失）；条内右侧自带"收起"切换按钮，再点收起。不占布局 → 行高不变。 -->
+                <Border Grid.Column="0" Grid.ColumnSpan="3"
+                        Background="{DynamicResource RegionBrush}"
+                        Panel.ZIndex="10"
+                        Visibility="{Binding IsFormulaEditorOpen, Converter={StaticResource BoolToVis}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <local:FormulaBindingControl Grid.Column="0"
+                                                     Compact="True"
+                                                     FormulaString="{Binding FormulaString, Mode=TwoWay}"
+                                                     IsReadOnly="{Binding IsReadOnly}"/>
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding TypeHint}"
+                                   VerticalAlignment="Center"
+                                   Margin="6,0,0,0"
+                                   FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
+                                   FontStyle="Italic"
+                                   Foreground="{DynamicResource InfoBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   ToolTip="{Binding TypeHint}">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource AndVis}">
+                                    <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
+                                    <Binding Path="ShowTypeHint" RelativeSource="{RelativeSource AncestorType=pg:PropertyGrid}"
+                                             Converter="{StaticResource BoolToVis}"/>
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
+                        <!-- 收起切换按钮（绑定条内自带，再点收起） -->
+                        <Button Grid.Column="2" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                                Command="{Binding ToggleFormulaEditorCommand}"
+                                ToolTip="{loc:Localized CollapseBindingEditor}"
+                                Style="{StaticResource IconButtonStyle}"
+                                VerticalAlignment="Center">
+                            <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                  Fill="{DynamicResource PrimaryBrush}"
+                                  Width="12" Height="12"
+                                  Stretch="Uniform"/>
+                        </Button>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+    <!-- 隐式模板：子 ItemsControl 自动使用此模板渲染 PropertyItem，实现无限递归 -->
+    <!--
+        隐式模板：根据 PropertyGrid.TitlePlacement 把行路由到「标题在上」或「标题在左」模板。
+        用 ContentControl + DataTrigger 而不是直接设置 ItemsControl.ItemTemplate：
+        CategoryTemplate 等多处都会创建 PropertyItem 列表，
+        统一走隐式模板才能一处切换、全局生效。
+        ContentTemplate 明确指向 StaticResource，不会回退到隐式模板自身，不会递归。
+    -->
+    <DataTemplate DataType="{x:Type local:PropertyItem}">
+        <ContentControl Content="{Binding}">
+            <ContentControl.Style>
+                <Style TargetType="ContentControl">
+                    <Setter Property="ContentTemplate" Value="{StaticResource PropertyRowTemplate}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding TitlePlacement, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}" Value="Left">
+                            <Setter Property="ContentTemplate" Value="{StaticResource PropertyRowTemplate_Left}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ContentControl.Style>
+        </ContentControl>
+    </DataTemplate>
+
+    <!-- ========== 分类模板 ========== -->
+    <DataTemplate x:Key="CategoryTemplate" DataType="{x:Type local:PropertyCategory}">
+        <Expander IsExpanded="{Binding IsExpanded}"
+                  Header="{Binding Name}"
+                  FontWeight="{Binding CategoryFontWeight, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
+                  Foreground="{DynamicResource PrimaryBrush}"
+                  Margin="0,4,0,0">
+            <Expander.HeaderTemplate>
+                <DataTemplate>
+                    <!-- 字号与粗细均绑定到 PropertyGrid，宿主可统一控制 -->
+                    <TextBlock Text="{Binding}" 
+                           FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}" 
+                           FontWeight="{Binding CategoryFontWeight, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
+                           Foreground="{DynamicResource PrimaryBrush}" />
+                </DataTemplate>
+            </Expander.HeaderTemplate>
+            <!-- 行模板走隐式模板（根据 PropertyGrid.TitlePlacement 自动切换 Top/Left 布局） -->
+            <ItemsControl ItemsSource="{Binding Items}"
+                          FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}"/>
+        </Expander>
+    </DataTemplate>
+
+    <!-- ========== 1.4.0 事件页模板（EventItem 行 / EventCategory 分组 / EventPicker / EventEditorControl） ========== -->
+
+    <!-- 事件行：名称（上） + 行内编辑器（下） -->
+    <DataTemplate x:Key="EventItemRowTemplate" DataType="{x:Type local:EventItem}">
+        <Grid Margin="0,1" Background="Transparent">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- 事件名（上方，样式与属性名对齐） -->
+            <TextBlock Grid.Row="0" Text="{Binding DisplayName}" Margin="8,4,4,2"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       ToolTip="{Binding Description}"
+                       VerticalAlignment="Center"/>
+
+            <!-- 处理方法名编辑器 + ⚡（下方） -->
+            <Grid Grid.Row="1" Margin="8,2,8,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <local:EventEditorControl Grid.Column="0"/>
+
+                <!-- 已绑定标记（未绑定时隐藏，不留白） -->
+                <Border Grid.Column="1" Width="20" Height="20" Margin="4,0,0,0"
+                        CornerRadius="3"
+                        Background="{DynamicResource SuccessBrush}"
+                        Visibility="{Binding HasHandler, Converter={StaticResource BoolToVis}}"
+                        ToolTip="{Binding HandlerName}">
+                    <TextBlock Text="⚡" FontSize="10"
+                               Foreground="White"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"/>
+                </Border>
+            </Grid>
+        </Grid>
+    </DataTemplate>
+
+    <!-- 事件分类分组：与属性 CategoryTemplate 同风格 -->
+    <DataTemplate x:Key="EventCategoryTemplate" DataType="{x:Type local:EventCategory}">
+        <Expander IsExpanded="True"
+                  Header="{Binding Name}"
+                  FontWeight="Bold"
+                  Foreground="{DynamicResource PrimaryBrush}"
+                  Margin="0,4,0,0">
+            <Expander.HeaderTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}"
+                               Foreground="{DynamicResource PrimaryBrush}"/>
+                </DataTemplate>
+            </Expander.HeaderTemplate>
+            <ItemsControl ItemsSource="{Binding Items}"
+                          FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}"
+                          ItemTemplate="{StaticResource EventItemRowTemplate}"/>
+        </Expander>
+    </DataTemplate>
+
+    <!-- EventPicker 平铺列表的分类头：纯标签行（不折叠——事件分类数少，平铺+虚拟化收益最大） -->
+    <DataTemplate x:Key="EventFlatCategoryHeaderTemplate">
+        <StackPanel x:Name="HeaderPanel" Margin="2,8,2,2">
+            <TextBlock Text="{Binding Name}"
+                       FontWeight="Bold"
+                       FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=local:EventPicker}}"
+                       Foreground="{DynamicResource PrimaryBrush}"/>
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <DataTrigger Binding="{Binding Name}" Value="">
+                <Setter TargetName="HeaderPanel" Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- 平铺行模板选择器：StaticResource 只能向前引用，必须声明在 EventPicker 样式之前 -->
+    <local:EventFlatRowTemplateSelector x:Key="EventFlatRowTemplateSelector"
+                                        CategoryTemplate="{StaticResource EventFlatCategoryHeaderTemplate}"
+                                        ItemTemplate="{StaticResource EventItemRowTemplate}"/>
+
+    <!-- EventPicker：搜索 + 平铺虚拟化事件列表（与 PropertyGrid 同款「压平 + 虚拟化」：
+         Button 有 100+ 事件，嵌套 Expander 全量生成每行 HC TextBox+按钮，首次打开明显卡顿；
+         平铺后 VirtualizingStackPanel 只生成视口内的行） -->
+    <Style TargetType="{x:Type local:EventPicker}">
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:EventPicker}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <hc:SearchBar Grid.Row="0"
+                                      Text="{Binding SearchText, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+                                      hc:InfoElement.Placeholder="{loc:Localized EventSearchPlaceholder}"
+                                      Margin="8,8,8,4"/>
+
+                        <!-- CanContentScroll=True 是项滚动虚拟化的必要前提；
+                             滚动位置由代码侧恢复（EventPicker.RebuildRows），不用外置 ScrollViewer -->
+                        <!-- 列表：ScrollViewer 必须放在 ItemsControl 自己的 ControlTemplate 内、
+                             紧邻 ItemsPresenter —— 外置 ScrollViewer 包 ItemsControl 时 VSP 接管不了
+                             IScrollInfo，会退化为像素滚动全量生成（实测 111/114 行全生成） -->
+                        <ItemsControl Grid.Row="1" x:Name="PART_ItemsControl"
+                                      VirtualizingPanel.IsVirtualizing="True"
+                                      VirtualizingPanel.VirtualizationMode="Recycling"
+                                      ItemTemplateSelector="{StaticResource EventFlatRowTemplateSelector}">
+                            <ItemsControl.Template>
+                                <ControlTemplate TargetType="ItemsControl">
+                                    <ScrollViewer x:Name="PART_ScrollViewer"
+                                                  CanContentScroll="True"
+                                                  VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </ControlTemplate>
+                            </ItemsControl.Template>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <VirtualizingStackPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- EventEditorControl：处理方法名输入 + ⚡ 按钮 -->
+    <Style TargetType="{x:Type local:EventEditorControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:EventEditorControl}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <hc:TextBox x:Name="PART_HandlerNameBox" Grid.Column="0"
+                                    Text="{Binding HandlerName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                    hc:InfoElement.Placeholder="{loc:Localized NoHandler}"
+                                    IsReadOnly="{Binding IsReadOnly}"/>
+                        <Button x:Name="PART_EditButton" Grid.Column="1"
+                                Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                                Content="⚡" FontSize="11"
+                                ToolTip="{loc:Localized EditHandler}"
+                                Style="{StaticResource IconButtonStyle}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== PropertyGrid 默认样式 ========== -->
+    <Style TargetType="{x:Type pg:PropertyGrid}">
+        <Setter Property="FontFamily" Value="Consolas"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type pg:PropertyGrid}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}">
+                        <Grid
+                            TextElement.FontFamily="{Binding FontFamily, RelativeSource={RelativeSource TemplatedParent}}"
+                            TextElement.FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- 集合编辑器宿主（集合模式下显示，覆盖整个区域） -->
+                            <ContentControl x:Name="PART_CollectionEditorHost" Grid.Row="1"
+                                            Visibility="Collapsed"/>
+
+                            <!-- 正常属性显示区域 -->
+                            <Grid x:Name="PART_NormalHost" Grid.Row="1">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="80" MinHeight="40" MaxHeight="300"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- 展开/折叠 + 搜索框（属性页内部；事件页激活时随属性页折叠，功能不变） -->
+                                <DockPanel Grid.Row="0" LastChildFill="True">
+                                    <hc:ButtonGroup VerticalAlignment="Center">
+                                        <RadioButton x:Name="PART_ExpandRadio" Content="{loc:Localized ExpandAll}"
+                                                     GroupName="ExpandMode" Margin="0,0,0,0"
+                                                     VerticalAlignment="Center"/>
+                                        
+                                        <RadioButton x:Name="PART_CollapseRadio" Content="{loc:Localized CollapseAll}"
+                                                     GroupName="ExpandMode"
+                                                     VerticalAlignment="Center"/>
+                                    </hc:ButtonGroup>
+                                    <hc:SearchBar x:Name="PART_SearchBox"
+                                             Text="{Binding SearchText, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+                                             hc:InfoElement.Placeholder="{loc:Localized SearchPlaceholder}"
+                                             Margin="8"/>
+                                </DockPanel>
+
+                                <!-- 属性列表 + 加载层（1.4.0：加载指示用静态文本代替 LoadingCircle ——
+                                     动画时钟在快速显隐的元素上持续 tick 是 clr 闪退的根源，静态化后无时钟无竞态） -->
+                                <Grid Grid.Row="1">
+                                    <!-- 虚拟化（Recycling）+ 项滚动（CanContentScroll=True）：只有项滚动下
+                                         VirtualizingStackPanel 才真正虚拟化（只生成可见行，实测 Realized≈5，
+                                         渲染 <30ms）。像素滚动（ScrollUnit=Pixel）虽滚动条精确，但 WPF 必须
+                                         生成全部容器算 Extent → 95 行全量渲染 ~650ms，切换对象卡顿。
+                                         滚动条估算（平均行高）由代码侧"首行预热"修正（见 PropertyGrid.cs
+                                         RefreshProperties），因此滚动条依然准确。 -->
+                                    <ItemsControl x:Name="PART_ItemsControl"
+                                                  VirtualizingPanel.IsVirtualizing="True"
+                                                  VirtualizingPanel.VirtualizationMode="Recycling">
+                                        <ItemsControl.Template>
+                                            <ControlTemplate TargetType="ItemsControl">
+                                                <ScrollViewer x:Name="PART_ScrollViewer"
+                                                              CanContentScroll="True"
+                                                              VerticalScrollBarVisibility="Auto"
+                                                              HorizontalScrollBarVisibility="Disabled">
+                                                    <ItemsPresenter/>
+                                                </ScrollViewer>
+                                            </ControlTemplate>
+                                        </ItemsControl.Template>
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <VirtualizingStackPanel/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.Resources>
+                                            <!-- 扁平列表中的类别头：点击折叠/展开，属性行作为独立项排在它后面。
+                                                 类别头保持紧凑（不强制高度）：折叠态无内容，高度=Header 自然高，
+                                                 避免类别名下方出现空白。
+                                                 HeaderTemplate 的 TextBlock 必须显式绑 FontSize/FontWeight——
+                                                 HC 的 Expander 隐式样式给头部定了固定字号，靠继承会卡死在 12
+                                                 不随 PropertyGrid.FontSize 缩放（老版 CategoryTemplate 同款绑定）。 -->
+                                            <DataTemplate DataType="{x:Type local:PropertyCategory}">
+                                                <Expander IsExpanded="{Binding IsExpanded, Mode=TwoWay}"
+                                                          Header="{Binding Name}"
+                                                          FontWeight="{Binding CategoryFontWeight, RelativeSource={RelativeSource TemplatedParent}}"
+                                                          Foreground="{DynamicResource PrimaryBrush}"
+                                                          Margin="0,4,0,0">
+                                                    <Expander.HeaderTemplate>
+                                                        <DataTemplate>
+                                                            <TextBlock Text="{Binding}"
+                                                                       FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}"
+                                                                       FontWeight="{Binding CategoryFontWeight, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
+                                                                       Foreground="{DynamicResource PrimaryBrush}"
+                                                                       Margin="0,4,0,4"/>
+                                                        </DataTemplate>
+                                                    </Expander.HeaderTemplate>
+                                                </Expander>
+                                            </DataTemplate>
+                                        </ItemsControl.Resources>
+                                    </ItemsControl>
+
+                                    <Border Background="{DynamicResource RegionBrush}"
+                                            Visibility="{Binding IsLoading, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                                        <TextBlock Text="..."
+                                                   FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
+                                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+
+                                <!-- 可拖拽分割条 -->
+                                <GridSplitter Grid.Row="2"
+                                              Height="4"
+                                              HorizontalAlignment="Stretch"
+                                              Background="{DynamicResource BorderBrush}"
+                                              ResizeBehavior="PreviousAndNext"
+                                              ResizeDirection="Rows"
+                                              Cursor="SizeNS"/>
+
+                                <!-- 描述栏（可调节高度） -->
+                                <Border Grid.Row="3"
+                                        Background="{DynamicResource SecondaryRegionBrush}"
+                                        BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="0,1,0,0"
+                                        Padding="8"
+                                        Visibility="{Binding SelectedPropertyItem, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource NullToVis}}">
+                                    <StackPanel>
+                                        <TextBlock x:Name="PART_DescriptionTitle"
+                                                   Text="{Binding SelectedPropertyItem.DisplayName, RelativeSource={RelativeSource TemplatedParent}}"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                        <TextBlock x:Name="PART_DescriptionText"
+                                                   Text="{Binding SelectedPropertyItem.Description, RelativeSource={RelativeSource TemplatedParent}}"
+                                                   FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-1}"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                                   Margin="0,4,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ============================================================
+         PropertyGridPro：跟随主题的「参数配置」平铺面板
+         配色不自定义任何画刷，直接复用项目 / HandyControl 现有主题键：
+           RegionBrush           → 面板底色
+           SecondaryRegionBrush  → 行悬停底色
+           BorderBrush           → 行分隔线、面板描边
+           PrimaryTextBrush      → 标题、属性名
+           SecondaryTextBrush    → 说明描述、来源、空状态
+           PrimaryBrush          → 强调色（分类竖条、图标按钮、编辑器强调色）
+         切换 HandyControl 皮肤（SkinType.Default / Dark）时自动跟随。
+         ============================================================ -->
+
+    <!-- ========== PropertyGridPro：单行模板（卡片式：属性名 + 说明 + 值编辑器） ========== -->
+    <!-- 排布：每个属性项 = 一张独立圆角卡片（圆角 7px、无阴影、1px 极细描边），
+         卡片间留白 10px，卡片内边距 上/下 12、左/右 16；属性名在左上、说明紧随其下，值编辑器统一右对齐；
+         行与行之间不再使用 1px 分隔线，改由卡片底色 + 描边 + 留白区分。 -->
+    <DataTemplate x:Key="ProPropertyRowTemplate">
+        <StackPanel>
+            <Border x:Name="ProRowRoot"
+                    Background="{DynamicResource SecondaryRegionBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="7"
+                    Padding="16,12,16,12"
+                    Margin="{Binding ProRowMargin}"
+                    SnapsToDevicePixels="True">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <!-- 名称/描述列（*）吃剩余空间、把编辑器列顶到卡片右缘；内容宽度上限由
+                                 内层 StackPanel 的 MaxWidth 控制。编辑器列必须保持 Auto（=固定
+                                 EditorWidth+按钮宽）：此前 *+* 对半分把编辑器列压到 290，固定 300 宽的
+                                 编辑器右对齐后向左溢出被裁 —— DatePicker 只剩 "-03-15 00:00:00"、
+                                 可展开行的箭头 ▶ 恰在编辑器最左端被裁"消失"。标题列再挤也只压缩
+                                 自己（单行省略），绝不挤压编辑器列。 -->
+                            <ColumnDefinition Width="*" MinWidth="80"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 左：属性名（上）+ 说明（下），均单行省略（老版同款紧凑行），完整内容看 ToolTip -->
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Center" MaxWidth="300">
+                            <TextBlock Text="{Binding DisplayName}"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"
+                                       VerticalAlignment="Center"/>
+                            <TextBlock x:Name="ProRowDescription"
+                                       Text="{Binding Description}"
+                                       Foreground="{DynamicResource SecondaryTextBrush}"
+                                       FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
+                                       TextWrapping="Wrap"
+                                       ToolTip="{Binding Description}"
+                                       Margin="0,4,0,0"/>
+                        </StackPanel>
+
+                        <!-- 右：值编辑器（统一右对齐）+ 绑定按钮 + 复位按钮 -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                    HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <ContentControl Content="{Binding}"
+                                            ContentTemplate="{x:Null}"
+                                            ContentTemplateSelector="{StaticResource EditorSelector}"
+                                            Width="{Binding EditorWidth, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}}"
+                                            HorizontalContentAlignment="Right"
+                                            VerticalAlignment="Center"/>
+                            <!-- 绑定按钮（仅 IsFormulaEnabled）：点击展开/收起覆盖式公式条（不占布局，卡片高度不变） -->
+                            <Button Width="20" Height="20" Padding="0" Margin="6,0,0,0"
+                                    Command="{Binding ToggleFormulaEditorCommand}"
+                                    ToolTip="{loc:Localized SelectBindingSource}"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    Visibility="{Binding IsFormulaEnabled, Converter={StaticResource BoolToVis}}">
+                                <Path Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                      Fill="{DynamicResource PrimaryBrush}"
+                                      Width="12" Height="12"
+                                      Stretch="Uniform"/>
+                            </Button>
+                            <!-- 复位按钮（常驻占位：未修改时 Hidden，保留空间，编辑时布局不抖动） -->
+                            <Button Width="20" Height="20" Padding="0" Margin="6,0,0,0"
+                                    Content="R" FontWeight="Bold"
+                                    FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
+                                    ToolTip="{loc:Localized ResetToDefault}"
+                                    Command="{Binding ResetCommand}"
+                                    Style="{StaticResource IconButtonStyle}"
+                                    Visibility="{Binding IsModified, Converter={StaticResource BoolToHiddenVis}}"/>
+                        </StackPanel>
+
+                        <!-- 覆盖式公式条（仅 [FormulaEditor] 标记或 FormulaBound<T> 属性显示）：
+                             与基类 PropertyGrid 行为一致 —— 点绑定按钮后覆盖在值编辑器列上
+                             （背景=卡片底色，不透明，看起来原编辑器消失）；条内右侧自带收起按钮，再点收起。
+                             不占布局 → 卡片高度恒定，虚拟化估算稳定。
+                             祖先查找用 pg:PropertyGridPro（基类模板写死的是 pg:PropertyGrid，无法复用）。 -->
+                        <Border Grid.Column="1"
+                                Background="{DynamicResource SecondaryRegionBrush}"
+                                Panel.ZIndex="10"
+                                Visibility="{Binding IsFormulaEditorOpen, Converter={StaticResource BoolToVis}}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <local:FormulaBindingControl Grid.Column="0"
+                                                             FormulaString="{Binding FormulaString, Mode=TwoWay}"
+                                                             IsReadOnly="{Binding IsReadOnly}"/>
+                                <!-- 类型提示(如 "(int)"):淡蓝色斜体,与公式输入框内容颜色区分 -->
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding TypeHint}"
+                                           VerticalAlignment="Center"
+                                           Margin="6,0,0,0"
+                                           FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
+                                           FontStyle="Italic"
+                                           Foreground="{DynamicResource InfoBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding TypeHint}">
+                                    <TextBlock.Visibility>
+                                        <MultiBinding Converter="{StaticResource AndVis}">
+                                            <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
+                                            <Binding Path="ShowTypeHint" RelativeSource="{RelativeSource AncestorType=pg:PropertyGridPro}"
+                                                     Converter="{StaticResource BoolToVis}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Visibility>
+                                </TextBlock>
+                                <!-- 收起切换按钮（绑定条内自带，再点收起） -->
+                                <Button Grid.Column="2" Width="20" Height="20" Padding="0" Margin="4,0,0,0"
+                                        Command="{Binding ToggleFormulaEditorCommand}"
+                                        ToolTip="{loc:Localized CollapseBindingEditor}"
+                                        Style="{StaticResource IconButtonStyle}"
+                                        VerticalAlignment="Center">
+                                    <Path Data="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
+                                          Fill="{DynamicResource PrimaryBrush}"
+                                          Width="12" Height="12"
+                                          Stretch="Uniform"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <!-- 悬停只用描边强调色，避免与卡片底色打架 -->
+            <Trigger SourceName="ProRowRoot" Property="IsMouseOver" Value="True">
+                <Setter TargetName="ProRowRoot" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+            </Trigger>
+            <DataTrigger Binding="{Binding Description}" Value="">
+                <Setter TargetName="ProRowDescription" Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- ========== PropertyGridPro：扁平列表中的「类别头」模板 ==========
+         压平为单层列表后，类别头与属性行同级排列，类别头不再包裹属性行。
+         视觉沿用原 ProCategoryTemplate 的头部（竖条 + 分类名），分类名为空（默认分类）时不渲染。
+         用 x:Key 而非隐式 DataTemplate：隐式模板会污染后代资源查找，导致子属性列表
+         解析不到行模板时回退到模板自身 → 无限递归 → 栈溢出（见 ProFlatRowTemplateSelector 注释）。 -->
+    <DataTemplate x:Key="ProFlatCategoryHeaderTemplate">
+        <StackPanel x:Name="ProFlatCategoryHeader"
+                    Orientation="Horizontal"
+                    Margin="16,14,16,6">
+            <Border Width="3" Height="13" CornerRadius="2" Margin="0,0,8,0"
+                    Background="{DynamicResource PrimaryBrush}"
+                    VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding Name}"
+                       FontWeight="Bold"
+                       FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <!-- 无分类名（默认分类）时不渲染分组头 -->
+            <DataTrigger Binding="{Binding Name}" Value="">
+                <Setter TargetName="ProFlatCategoryHeader" Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- ========== PropertyGridPro：分类模板（无 Expander，不折叠） ========== -->
+    <DataTemplate x:Key="ProCategoryTemplate">
+        <StackPanel>
+            <StackPanel x:Name="ProCategoryHeader"
+                        Orientation="Horizontal"
+                        Margin="16,14,16,6">
+                <Border Width="3" Height="13" CornerRadius="2" Margin="0,0,8,0"
+                        Background="{DynamicResource PrimaryBrush}"
+                        VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding Name}"
+                           FontWeight="Bold"
+                           FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=1}"
+                           Foreground="{DynamicResource PrimaryTextBrush}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding Items}"
+                          ItemTemplate="{StaticResource ProPropertyRowTemplate}"/>
+        </StackPanel>
+        <DataTemplate.Triggers>
+            <!-- 无分类名（默认分类 / 关闭分类标题）时不渲染分组头 -->
+            <DataTrigger Binding="{Binding Name}" Value="">
+                <Setter TargetName="ProCategoryHeader" Property="Visibility" Value="Collapsed"/>
+            </DataTrigger>
+        </DataTemplate.Triggers>
+    </DataTemplate>
+
+    <!-- ========== PropertyGridPro 默认样式 ========== -->
+    <Style TargetType="{x:Type pg:PropertyGridPro}">
+        <Setter Property="FontFamily" Value="Segoe UI, Microsoft YaHei UI"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+        <Setter Property="Background" Value="{DynamicResource RegionBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="EditorWidth" Value="280"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <!-- 行模板注入：顶层行与展开后的各级子属性行复用同一张卡片模板 -->
+        <Setter Property="RowTemplate" Value="{StaticResource ProPropertyRowTemplate}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type pg:PropertyGridPro}">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="8"
+                            SnapsToDevicePixels="True">
+                        <Grid TextElement.FontFamily="{Binding FontFamily, RelativeSource={RelativeSource TemplatedParent}}"
+                              TextElement.FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- 头部：标题 + 说明 + 来源 + 搜索框 -->
+                            <StackPanel Grid.Row="0">
+                                <StackPanel x:Name="PART_HeaderPanel"
+                                            Margin="16,14,16,0"
+                                            Visibility="{Binding ShowHeader, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock x:Name="PART_HeaderText"
+                                               Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"
+                                               FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=7}"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource PrimaryTextBrush}"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock x:Name="PART_HeaderDescriptionText"
+                                               Text="{Binding HeaderDescription, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-1}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,6,0,0"/>
+                                    <TextBlock x:Name="PART_SourceText"
+                                               Text="{Binding SourceText, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-3}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,4,0,0"
+                                               Opacity="0.75"/>
+                                </StackPanel>
+
+                                <!-- 属性搜索 -->
+                                <Grid Margin="16,12,16,8"
+                                      Visibility="{Binding ShowSearchBar, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <hc:SearchBar x:Name="PART_SearchBox"
+                                                  Grid.Column="0"
+                                                  Text="{Binding SearchText, RelativeSource={RelativeSource TemplatedParent}, UpdateSourceTrigger=PropertyChanged}"
+                                                  hc:InfoElement.Placeholder="{loc:Localized SearchPlaceholder}"/>
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding MatchCountText, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Foreground="{DynamicResource SecondaryTextBrush}"
+                                               VerticalAlignment="Center"
+                                               Margin="10,0,2,0"/>
+                                </Grid>
+
+                                <Border Height="1" Background="{DynamicResource BorderBrush}"/>
+                            </StackPanel>
+
+                            <!-- 属性平铺列表（与基类 PropertyGrid 同款「压平 + 虚拟化」）：
+                                 行卡片已统一为「单行说明 + 固定高编辑器区」，行高一致，
+                                 VirtualizingStackPanel + Recycling 只生成视口内的卡片
+                                 （此前 StackPanel 全量生成 77+ 张卡片，实测每次重建 672ms，
+                                 展开/筛选重建瞬间卡顿）。滚动估算由代码侧"首行预热"修正
+                                 （见 PropertyGridPro.ApplyFilter，与基类同款）。 -->
+                            <Grid Grid.Row="1">
+                                <ItemsControl x:Name="PART_ItemsControl"
+                                              VirtualizingPanel.IsVirtualizing="True"
+                                              VirtualizingPanel.VirtualizationMode="Recycling">
+                                    <ItemsControl.Template>
+                                        <ControlTemplate TargetType="ItemsControl">
+                                            <ScrollViewer x:Name="PART_ScrollViewer"
+                                                          CanContentScroll="True"
+                                                          VerticalScrollBarVisibility="Auto"
+                                                          HorizontalScrollBarVisibility="Disabled"
+                                                          Padding="0,2,0,8">
+                                                <ItemsPresenter/>
+                                            </ScrollViewer>
+                                        </ControlTemplate>
+                                    </ItemsControl.Template>
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <VirtualizingStackPanel/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <!-- 行模板分派：类别头用固定模板、属性行用宿主 RowTemplate。
+                                         刻意不用隐式 DataTemplate（DataType=PropertyItem）：
+                                         隐式模板对后代元素同样生效，属性行模板内的子属性列表一旦
+                                         解析不到 RowTemplate 就会回退到该隐式模板自身 → 无限递归
+                                         → 栈溢出（进程直接起不来）。详见 ProFlatRowTemplateSelector。 -->
+                                    <ItemsControl.ItemTemplateSelector>
+                                        <pg:ProFlatRowTemplateSelector
+                                            CategoryTemplate="{StaticResource ProFlatCategoryHeaderTemplate}"/>
+                                    </ItemsControl.ItemTemplateSelector>
+                                </ItemsControl>
+
+                                <!-- 空状态 -->
+                                <TextBlock Text="{loc:Localized ProNoResult}"
+                                           Visibility="{Binding HasNoResult, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"
+                                           Foreground="{DynamicResource SecondaryTextBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Margin="16"/>
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                            <Setter TargetName="PART_HeaderText" Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding HeaderDescription, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                            <Setter TargetName="PART_HeaderDescriptionText" Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding SourceText, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                            <Setter TargetName="PART_SourceText" Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

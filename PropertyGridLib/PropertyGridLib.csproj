@@ -1,0 +1,63 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net48;netcoreapp3.0;netcoreapp3.1;net6.0-windows;net7.0-windows;net8.0-windows</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>PropertyGridLib</RootNamespace>
+    <AssemblyName>PropertyGridLib</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    
+    <!-- NuGet 包配置 -->
+    <PackageId>PropertyGridLib</PackageId>
+    <Version>1.5.0</Version>
+    <AssemblyVersion>1.5.0.0</AssemblyVersion>
+    <FileVersion>1.5.0.0</FileVersion>
+    <Authors>WangShuo</Authors>
+    <Company>WangShuo</Company>
+    <Product>PropertyGridLib</Product>
+    <Copyright>Copyright © 2026 WangShuo. All rights reserved.</Copyright>
+    <Trademark>WangShuo</Trademark>
+    <Description>WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid 风格，基于 HandyControl 构建。支持文件/目录选择、集合编辑器、字典编辑器（IDictionary，键/值均可为复杂对象并无限嵌套）、命令按钮（[Button] + 点击事件 + 全局事件）、数值滑块、布尔开关（[ToggleSwitch]）、公式绑定（FormulaBound&lt;T&gt;）、多选列表、颜色选择器、宿主自定义编辑器扩展机制、TypeConverter 下拉、中英文双语多语言切换、搜索过滤等；并提供纵向平铺、卡片式行布局、主题自适应、带属性搜索的平铺参数面板控件（PropertyGridPro）。1.4.0 新增事件页能力（ShowEventsPage 开关 + EventPicker 事件筛选选择器 + EventItem 模型 + EventEditorControl 行内编辑器，默认关闭、不影响旧行为），方便设计器宿主把事件绑定与代码编辑器（如 CodeForge）打通；对属性列表做 UI 虚拟化改造（类别头与属性行压平为单层列表 + 虚拟滚动 + 公式绑定区按需创建），切换选中时的重建耗时由 206ms 降至 8ms、重复刷新的内存增长由 44.5MB 降至 14.6MB，宿主可通过 EnableVirtualization 开关回退到全量生成行为；并新增 TitlePlacement 属性，支持 Small 紧凑布局（标题在编辑器左侧、两者平齐一行，对齐 HandyControl 表单左标题风格），默认 Top 行为不变，R 复位按钮与公式绑定区行为保持一致；并新增 TitleFontWeight / CategoryFontWeight 两个可配置属性，分别控制属性行标题与分类头的字体粗细（默认 Bold），宿主可按需设为 Normal / Light 等；修复 Value / ValueString setter 的相等性判断，消除虚拟化容器复用 / 绑定建立时 TwoWay 绑定把当前值推回源导致的无意义属性变更事件。1.5.0 修复 FormulaSwitchControl（可独立使用的普通输入↔公式绑定切换控件）在公式模式下普通输入框与公式绑定条内部输入框同时显示、相互重叠的问题：改为随 IsFormulaMode 直接绑定 Visibility 互斥显隐，不再依赖 ControlTemplate.Triggers。完全移除 System.Windows.Forms 依赖，使用 HandyControl 原生对话框。适用于 .NET Framework 4.8+ 及 .NET Core 3.0/3.1、.NET 6/7/8（Windows）WPF 项目。</Description>
+    <PackageTags>WPF;PropertyGrid;PropertyGridPro;Editor;Controls;Button;Dictionary;Collection;Formula;MultiSelect;ToggleSwitch;Localization;EventPicker;Events;HandyControl;TypeConverter;NETCoreApp3;NET6;NET7;NET8</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/1wangshuo/PropertyGridDemo</PackageProjectUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- 包输出统一到解决方案根 nuget\。
+         不能只用 $(SolutionDir)：单独对本工程执行 dotnet pack/build 时该属性为空，
+         包会落到 PropertyGridLib\nuget\ 造成「两个地方都有包、分不清哪个最新」。
+         这里以工程文件位置为准推导，任何方式打包都输出到同一目录。 -->
+    <PackageOutputPath>$(MSBuildThisFileDirectory)..\nuget\</PackageOutputPath>
+    <InformationalVersion>1.5.0</InformationalVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 官方 HandyControl（非 fork）。主题资源不再由库内窗口自行合并，
+         弹窗继承应用级资源；主题切换由宿主通过 Theme.Skin / ThemeManager 完成 -->
+    <PackageReference Include="HandyControl" Version="3.5.1" />
+    
+    <!-- System.Text.Json 使用灵活版本范围，允许宿主项目使用更高版本 -->
+    <!-- .NET 6/7/8 已内置 System.Text.Json，此引用仅为 net48 提供支持 -->
+    <PackageReference Include="System.Text.Json" Version="6.0.0" Condition="'$(TargetFramework)' == 'net48'" />
+
+    <!-- Costura.Fody：把 HandyControl / System.Text.Json 等依赖 DLL 嵌入合并到 PropertyGridLib 里，
+         宿主只需引用一个 DLL，无需额外附带 HandyControl.dll -->
+    <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
