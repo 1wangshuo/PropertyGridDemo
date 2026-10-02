@@ -14,6 +14,22 @@ namespace PropertyGridDemo
         public static readonly ConditionalWeakTable<PropertyItem, string> UnitStateTable =
             new ConditionalWeakTable<PropertyItem, string>();
 
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+
+            // 离屏截图模式：--shots <输出目录>  —— 生成文档配图后退出，不启动交互窗体
+            int idx = Array.IndexOf(e.Args, "--shots");
+            if (idx >= 0 && idx + 1 < e.Args.Length)
+            {
+                ShotService.Run(e.Args[idx + 1]);
+                Shutdown();
+                return;
+            }
+
+            new MainWindow().Show();
+        }
+
         private void UnitCombo_Loaded(object sender, RoutedEventArgs e)
         {
             if (sender is not ComboBox combo || combo.DataContext is not PropertyItem pi) return;

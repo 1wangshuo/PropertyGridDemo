@@ -3,8 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:PropertyGridDemo.Models"
-             xmlns:conv="clr-namespace:PropertyGridLib.Converters;assembly=PropertyGridLib"
-             StartupUri="MainWindow.xaml">
+             xmlns:conv="clr-namespace:PropertyGridLib.Converters;assembly=PropertyGridLib">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
