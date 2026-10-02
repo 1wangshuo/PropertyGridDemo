@@ -17,6 +17,9 @@ TestResults/
 ## VS Code
 .vscode/
 
+## nuget 发布包不上传
+nuget/
+
 ## Windows / macOS 噪音文件
 Thumbs.db
 ehthumbs.db
