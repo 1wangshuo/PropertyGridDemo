@@ -1,0 +1,83 @@
+<Window x:Class="PropertyGridDemo.PropertyGridProDemoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:pg="clr-namespace:PropertyGridLib;assembly=PropertyGridLib"
+        Title="PropertyGridPro 演示 - 主题自适应平铺参数面板"
+        Height="760" Width="1180"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource RegionBrush}">
+
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="640"/>
+            <ColumnDefinition Width="16"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ========== 左侧：PropertyGridPro ========== -->
+        <DockPanel Grid.Column="0">
+            <TextBlock DockPanel.Dock="Top"
+                       Text="PropertyGridPro 控件（纵向平铺 / 不折叠 / 带属性搜索）"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryTextBrush}"
+                       Margin="0,0,0,8"/>
+
+            <Border DockPanel.Dock="Top"
+                    Background="{DynamicResource SecondaryRegionBrush}"
+                    CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="从模型刷新" Padding="14,6" Margin="0,0,8,0"
+                            Click="Refresh_Click"/>
+                    <Button Content="恢复默认值" Padding="14,6" Margin="0,0,8,0"
+                            Click="ResetAll_Click"/>
+                    <Button Content="切换主题" Padding="14,6" Margin="0,0,8,0"
+                            Click="ToggleTheme_Click"/>
+                    <TextBlock x:Name="txtTheme" VerticalAlignment="Center"
+                               Foreground="{DynamicResource SecondaryTextBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <pg:PropertyGridPro x:Name="proGrid"
+                                EditorWidth="300"
+                                Header="参数配置"
+                                HeaderDescription="平铺参数面板示例：与 PropertyGrid 演示共用同一模型（PropertyGridDemo.Models.SampleObject，智能监控摄像头配置，I ~ XV 共 15 个分组）。顶部搜索框支持多关键词过滤（空格分隔），匹配显示名、属性名、说明与分类。"
+                                SourceText="来源扩展：PropertyGridDemo.Models.SampleObject"
+                                ShowHeader="True"
+                                ShowSearchBar="True"
+                                ShowCategoryHeaders="True"
+                                PropertyValueChanged="ProGrid_PropertyValueChanged"
+                                ButtonClicked="ProGrid_ButtonClicked"/>
+        </DockPanel>
+
+        <!-- ========== 右侧：使用说明 ========== -->
+        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="使用说明" FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+
+                <Border Background="{DynamicResource SecondaryRegionBrush}" CornerRadius="8" Padding="14">
+                    <StackPanel>
+                        <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" LineHeight="20">
+                            <Run Text="1. 平铺不折叠：每一项都是独立行，左侧属性名 + 次级说明文字，右侧值编辑器；"/>
+                            <LineBreak/>
+                            <Run Text="2. 属性搜索：顶部搜索框实时过滤，尝试输入 “摄像头”、“灵敏度”、“固件”，或多关键词 “存储 目录”；"/>
+                            <LineBreak/>
+                            <Run Text="3. 与 PropertyGrid 共用同一套反射体系（PropertyItemFactory / PropertyItem / EditorSelector），"/>
+                            <LineBreak/>
+                            <Run Text="    因此 [NumberSlider]、[FilePath]、[DirectoryPath]、[Button]、[TypeConverter] 下拉、[ReadOnly] 等编辑器行为完全一致；"/>
+                            <LineBreak/>
+                            <Run Text="3.1 布尔开关：[ToggleSwitch] / [ToggleSwitch(&quot;已启用&quot;,&quot;已禁用&quot;)] 标注的 bool 属性和基类 PropertyGrid 一样显示为开关（ToggleSwitch）样式，见 “XIV. 布尔开关（ToggleSwitch）演示 ★” 分组；未标注的 bool 保持原有显示；"/>
+                            <LineBreak/>
+                            <Run Text="4. 点击“抓拍”/“重启”按钮：反射调用模型方法，只读项“抓拍次数”随面板刷新（“导出配置”未指定 Action，仅触发 ButtonClicked 事件）；"/>
+                            <LineBreak/>
+                            <Run Text="5. 配色跟随主题：面板不定义任何自定义画刷，全部取自项目现有主题键（RegionBrush / SecondaryRegionBrush / BorderBrush / PrimaryTextBrush / SecondaryTextBrush / PrimaryBrush），点击“切换主题”可在浅色与深色间即时切换验证。"/>
+                            <LineBreak/>
+                            <Run Text="6. 公式绑定：[FormulaEditor] / FormulaBound&lt;T&gt; 属性（如“IX. 公式绑定”分组下的摄像头名称绑定、标定比例绑定）在值编辑器下方显示公式栏，点击链接图标从公式树中选择绑定源，行为与 PropertyGrid 完全一致。"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Window>
