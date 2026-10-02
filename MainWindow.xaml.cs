@@ -14,7 +14,6 @@ namespace PropertyGridDemo
 {
     public partial class MainWindow : Window
     {
-        private bool _isDarkMode;
         private bool _useSecondObject;
         private bool _isEnglish;
 
@@ -28,6 +27,14 @@ namespace PropertyGridDemo
             WindowState = WindowState.Maximized;
             Loaded += (s, e) => UpdatePropertyValues();
             InitAppearancePanel();
+
+            // 压测开关（Demo 专用）：--stress-pro / --stress-pro-novirt
+            // 自动打开 PropertyGridPro 窗口并跑刷新压测，结果写入 exe 同目录 pro-stress-result.txt
+            if (Environment.GetCommandLineArgs()
+                .Any(a => a.StartsWith("--stress-pro", StringComparison.OrdinalIgnoreCase)))
+            {
+                Loaded += (s, e) => new PropertyGridProDemoWindow().Show();
+            }
 
             PropertyGrid.GlobalButtonClicked += OnPropertyGridButtonClicked;
             Closed += (s, e) => PropertyGrid.GlobalButtonClicked -= OnPropertyGridButtonClicked;
@@ -65,43 +72,13 @@ namespace PropertyGridDemo
 
         private void ToggleTheme_Click(object sender, RoutedEventArgs e)
         {
-            _isDarkMode = !_isDarkMode;
-            SetAppSkin(_isDarkMode ? HandyControl.Data.SkinType.Dark : HandyControl.Data.SkinType.Default);
-        }
-
-        private static void SetAppSkin(HandyControl.Data.SkinType skin)
-        {
-            var appRes = Application.Current.Resources;
-            HandyControl.Themes.Theme theme = null;
-            for (int i = 0; i < appRes.MergedDictionaries.Count; i++)
-            {
-                if (appRes.MergedDictionaries[i] is HandyControl.Themes.Theme t)
-                {
-                    theme = t;
-                    break;
-                }
-            }
-
-            if (theme == null)
-            {
-                theme = new HandyControl.Themes.Theme();
-                appRes.MergedDictionaries.Add(theme);
-            }
-
-            theme.Skin = skin;
+            ThemeHelper.Toggle();
         }
 
         private void SwitchObject_Click(object sender, RoutedEventArgs e)
         {
             _useSecondObject = !_useSecondObject;
-            if (_useSecondObject)
-            {
-                propertyGrid.SelectedObject = new SampleObject();
-            }
-            else
-            {
-                propertyGrid.SelectedObject = new SampleObject2();
-            }
+            propertyGrid.SelectedObject = _useSecondObject ? new SampleObject2() : new SampleObject();
             UpdatePropertyValues();
         }
 
@@ -114,6 +91,37 @@ namespace PropertyGridDemo
         private void CollectionEditorDemo_Click(object sender, RoutedEventArgs e)
         {
             var win = new CollectionEditorDemoWindow
+            {
+                Owner = this
+            };
+            win.ShowDialog();
+        }
+
+        private void PropertyGridProDemo_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new PropertyGridProDemoWindow
+            {
+                Owner = this
+            };
+            win.ShowDialog();
+        }
+
+        private bool _smallLayout;
+
+        /// <summary>Small 紧凑布局切换：TitlePlacement Top（默认/标题在编辑器上方）↔ Left（Small/标题在编辑器左侧，行高压缩近一半）</summary>
+        private void ToggleSmallLayout_Click(object sender, RoutedEventArgs e)
+        {
+            _smallLayout = !_smallLayout;
+            propertyGrid.TitlePlacement = _smallLayout
+                ? PropertyGridLib.PropertyGridTitlePlacement.Left
+                : PropertyGridLib.PropertyGridTitlePlacement.Top;
+            SmallLayoutButton.Content = _smallLayout ? "恢复默认布局" : "Small 紧凑布局";
+            UpdatePropertyValues();
+        }
+
+        private void EventPickerDemo_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new EventPickerDemoWindow
             {
                 Owner = this
             };

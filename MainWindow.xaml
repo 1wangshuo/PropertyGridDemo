@@ -57,7 +57,8 @@
             <controls:PropertyGrid x:Name="propertyGrid"
                                    SelectedObject="{StaticResource sampleObj}"
                                    ShowDescription="True"
-                                   ShowSearchBar="True"/>
+                                   ShowSearchBar="True"
+                                   TitlePlacement="Top"/>
         </DockPanel>
 
         <!-- ========== 右侧：操作面板 + 实时预览 ========== -->
@@ -88,6 +89,12 @@
                             Click="ToggleLanguage_Click"/>
                     <Button Content="控件独立使用演示" Padding="14,6" Margin="0,0,8,8"
                             Click="CollectionEditorDemo_Click"/>
+                    <Button Content="PropertyGridPro 平铺面板演示" Padding="14,6" Margin="0,0,8,8"
+                            Click="PropertyGridProDemo_Click"/>
+                    <Button x:Name="SmallLayoutButton" Content="Small 紧凑布局" Padding="14,6" Margin="0,0,8,8"
+                            Click="ToggleSmallLayout_Click"/>
+                    <Button Content="事件编辑器独立演示" Padding="14,6" Margin="0,0,8,8"
+                            Click="EventPickerDemo_Click"/>
                 </WrapPanel>
             </StackPanel>
 
@@ -115,23 +122,28 @@
                     <TextBlock Text="支持的 .NET 特性" FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,6"/>
                     <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap">
-[Category("分类")]  — 属性分组&#x0a;
+[Category("分类")]  — 属性分组（「杂项/Misc」分类自动排最后）&#x0a;
 [DisplayName("显示名")]  — 自定义显示名称&#x0a;
 [Description("描述")]  — 底部描述栏显示&#x0a;
 [DefaultValue(value)]  — 默认值 + 重置按钮&#x0a;
 [ReadOnly(true)]  — 只读属性&#x0a;
 [Browsable(false)]  — 隐藏属性&#x0a;
 [Button("文本", nameof(方法))]  — 命令按钮 + 点击事件&#x0a;
+[ToggleSwitch("开","关")]  — bool 显示为开关（ToggleSwitch）样式&#x0a;
+[MultilineText]  — 长文本：单行预览 + “…”弹出多行富文本编辑&#x0a;
+Type 类型属性  — 只读显示，不展开反射元数据
                     </TextBlock>
                     <TextBlock Text="支持的编辑器类型" FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,8,0,6"/>
                     <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap">
-string → TextBox&#x0a;
-bool → CheckBox&#x0a;
+string → TextBox（[MultilineText]：单行预览 + 多行富文本弹窗）&#x0a;
+bool → 开关样式（默认：仅开关；[ToggleSwitch]：开关 + 开/关文字）&#x0a;
 int/double/float → NumericUpDown&#x0a;
 enum → ComboBox&#x0a;
 DateTime → DatePicker&#x0a;
-复杂对象 → 可展开子属性&#x0a;
+Color/SolidColorBrush → Color 编辑器（改色不再污染共享画刷）&#x0a;
+Type → 只读文本（不展开反射元数据）&#x0a;
+复杂对象 → 可展开子属性（嵌套层默认折叠，单点展开）&#x0a;
 [Button] 特性 → 命令按钮（触发点击事件）
                     </TextBlock>
                 </StackPanel>

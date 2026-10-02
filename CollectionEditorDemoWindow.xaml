@@ -145,6 +145,91 @@
                     </Border>
                 </Grid>
             </TabItem>
+
+            <!-- ==================== Tab: 路径选择 + 绑定切换（SDK 独立控件） ==================== -->
+            <TabItem Header="路径/绑定切换控件">
+                <Grid Margin="0,8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="FilePathControl（文件/目录选择）与 FormulaSwitchControl（普通输入 ↔ 公式绑定切换）均可脱离 PropertyGrid 独立使用，开放给宿主直接实例化或绑定"
+                               FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                    <!-- 文件/目录选择控件 -->
+                    <Border Grid.Row="1" Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="FilePathControl：文本框 + 「...」浏览" FontWeight="Bold"
+                                       FontSize="14" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="文件：" VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <local:FilePathControl Grid.Column="1"
+                                                       Text="{Binding SdkFilePath, Mode=TwoWay}"
+                                                       Filter="*.log"
+                                                       Margin="0,4"/>
+                            </Grid>
+                            <Grid Margin="0,4,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="目录：" VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <local:FilePathControl Grid.Column="1"
+                                                       Text="{Binding SdkDirectory, Mode=TwoWay}"
+                                                       SelectDirectory="True"
+                                                       Margin="0,4"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SdkFilePath, StringFormat=当前文件值: {0}}"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 普通 ↔ 绑定 切换控件 -->
+                    <Border Grid.Row="2" Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="FormulaSwitchControl：普通输入 ↔ 公式绑定（🔗 切换）" FontWeight="Bold"
+                                       FontSize="14" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="值：" VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <local:FormulaSwitchControl Grid.Column="1"
+                                                            Text="{Binding SdkSwitchText, Mode=TwoWay}"
+                                                            FormulaString="{Binding SdkSwitchFormula, Mode=TwoWay}"
+                                                            TreeItemsSource="{Binding DirectTreeNodes}"
+                                                            Margin="0,4"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SdkSwitchFormula, StringFormat=当前公式: {0}}"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 占位区（与其他页签高度一致） -->
+                    <Border Grid.Row="3" Background="{DynamicResource RegionBrush}"
+                            CornerRadius="8" Padding="16"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                        <TextBlock Text="两个控件均可独立实例化：FilePathControl（Text/Filter/Title/SelectDirectory/IsReadOnly）、FormulaSwitchControl（Text/FormulaString/TreeItemsSource/FormulaTreeProvider/IsFormulaMode/IsReadOnly/Compact）"
+                                   FontFamily="Consolas" FontSize="13"
+                                   Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap"/>
+                    </Border>
+                </Grid>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

@@ -204,6 +204,16 @@ namespace PropertyGridDemo.Models
             new CruisePoint { PresetName = "停车场", Horizontal = 45, Vertical = 60, StaySeconds = 10 }
         };
 
+        [DisplayName("只读巡航点位")]
+        [Description("[ReadOnly(true)] 复杂对象集合只读查看：增删/复制/上下移隐藏，属性页只读可看不可改")]
+        [ReadOnly(true)]
+        [CollectionEditor]
+        public List<CruisePoint> ReadOnlyCruisePoints { get; set; } = new List<CruisePoint>
+        {
+            new CruisePoint { PresetName = "大门", Horizontal = 180, Vertical = 90, StaySeconds = 5 },
+            new CruisePoint { PresetName = "停车场", Horizontal = 45, Vertical = 60, StaySeconds = 10 }
+        };
+
         // ============================================================
         // VIII. 字典编辑器
         // ============================================================
@@ -240,6 +250,22 @@ namespace PropertyGridDemo.Models
             }
         };
 
+        [Category("VIII. 字典编辑器")]
+        [DisplayName("只读区域灵敏度")]
+        [Description("[ReadOnly(true)] 字典只读查看：点 ... 打开窗体仅可浏览，无增删改功能按钮")]
+        [ReadOnly(true)]
+        public Dictionary<string, int> ReadOnlyZoneSensitivity { get; set; } = new Dictionary<string, int>
+        {
+            { "东门", 8 }, { "西门", 5 }, { "北门", 6 }
+        };
+
+        [Category("VII. 集合编辑器")]
+        [DisplayName("只读值班名单")]
+        [Description("[ReadOnly(true)] 集合只读查看：点 ... 打开窗体仅可浏览，无增删改功能按钮")]
+        [ReadOnly(true)]
+        [CollectionEditor]
+        public List<string> ReadOnlyDutyPersonnel { get; set; } = new List<string> { "赵一", "钱二", "孙三" };
+
         // ============================================================
         // IX. 公式绑定
         // ============================================================
@@ -255,6 +281,18 @@ namespace PropertyGridDemo.Models
         [Description("FormulaBound<int> — int 类型公式绑定（框架内置 Formula 编辑器）")]
         [FormulaEditor(typeof(DemoFormulaTreeProvider))]
         public FormulaBound<int> DurationFormula { get; set; } = new FormulaBound<int> { Value = 30 };
+
+        [Category("IX. 公式绑定")]
+        [DisplayName("标定比例绑定")]
+        [Description("FormulaBound<double> — double 类型公式绑定，已预置一条公式（框架内置 Formula 编辑器）")]
+        [FormulaEditor(typeof(DemoFormulaTreeProvider))]
+        public FormulaBound<double> ScaleFormula { get; set; } = new FormulaBound<double> { Value = 0.1, Formula = "&{Flow1,Task2,Output}" };
+
+        [Category("IX. 公式绑定")]
+        [DisplayName("设备别名绑定")]
+        [Description("普通 string 属性 + [FormulaEditor] — 非 FormulaBound 类型同样可用公式编辑器")]
+        [FormulaEditor(typeof(DemoFormulaTreeProvider))]
+        public string DeviceAliasFormula { get; set; } = "一号相机";
 
         // ============================================================
         // X. 操作按钮
@@ -336,7 +374,65 @@ namespace PropertyGridDemo.Models
         public int InternalFrameCount { get; set; } = 0;
 
         // ============================================================
-        // XIII. 自然排序
+        // XV. 多行文本与类型：多行富文本 / Type 保护 / 只读增强
+        // ============================================================
+
+        [Category("XV. 多行文本与类型")]
+        [DisplayName("备注说明")]
+        [Description("[MultilineText] 特性：长文本显示为单行预览 + “…”按钮，点击弹出多行富文本编辑（自动换行 + 回车换行）")]
+        [MultilineText]
+        public string Remarks { get; set; } =
+            "摄像头安装于正门入口上方，覆盖半径 8 米范围。\n" +
+            "注意：夜间开启补光后功耗增加约 15%。\n" +
+            "建议每季度检查一次防水胶圈，避免潮湿环境导致短路。\n" +
+            "固件升级前请先备份配置，并确保网络稳定。";
+
+        [Category("XV. 多行文本与类型")]
+        [DisplayName("运行时类型")]
+        [Description("Type 类型属性：框架不展开其反射元数据（修复反射异常风暴），显示为只读文本")]
+        [ReadOnly(true)]
+        public Type RuntimeType { get; set; } = typeof(SampleObject);
+
+        [Category("XV. 多行文本与类型")]
+        [DisplayName("关联类型")]
+        [Description("Type 类型属性：同上，不可展开")]
+        [ReadOnly(true)]
+        public Type LinkedType { get; set; } = typeof(DetectionZone);
+
+        [Category("XV. 多行文本与类型")]
+        [DisplayName("只读嵌套字典")]
+        [Description("[ReadOnly(true)] 嵌套字典只读查看：外层与内层弹窗均为只读（无增删、不可编辑）")]
+        [ReadOnly(true)]
+        public Dictionary<string, Dictionary<string, int>> ReadOnlyNestedZoneConfig { get; set; } =
+            new Dictionary<string, Dictionary<string, int>>
+            {
+                ["白天模式"] = new Dictionary<string, int> { ["亮度"] = 80, ["对比度"] = 100 },
+                ["夜间模式"] = new Dictionary<string, int> { ["亮度"] = 30, ["对比度"] = 120 }
+            };
+
+        [Category("XV. 多行文本与类型")]
+        [DisplayName("只读说明文本")]
+        [Description("[ReadOnly(true)] + [MultilineText]：多行文本只读，「…」按钮禁用，无法打开编辑弹窗")]
+        [ReadOnly(true)]
+        [MultilineText]
+        public string ReadOnlyRemarks { get; set; } =
+            "此字段为只读说明文本。\n" +
+            "「…」按钮打开的是只读浏览窗口：正文不可编辑，仅有「关闭」。\n" +
+            "内容由出厂固件写入，仅作展示。";
+
+        [Category("杂项")]
+        [DisplayName("临时备注")]
+        [Description("「杂项」分类：应排在所有分类最后（与官方属性页行为一致）")]
+        public string MiscNote { get; set; } = "杂项内容";
+
+        [Category("杂项")]
+        [DisplayName("调试开关")]
+        [Description("「杂项」分类第二条")]
+        [DefaultValue(false)]
+        public bool MiscDebugFlag { get; set; }
+
+        // ============================================================
+        // 自然排序
         // ============================================================
 
         [Category("XIII. 排序演示")]
@@ -379,6 +475,38 @@ namespace PropertyGridDemo.Models
         [DisplayName("c.字母C")]
         public string SortParamC { get; set; } = "C";
 
+
+        private bool _ToggleSwitchDefault = true;
+        // ============================================================
+        // XIV. 布尔开关（ToggleSwitch）演示
+        // ============================================================
+
+        [Category("XIV. 布尔开关（ToggleSwitch）演示 ★")]
+        [DisplayName("默认开关文字")]
+        [Description("[ToggleSwitch] 特性：bool 显示为开关（ToggleSwitch）样式，状态文字使用默认「开 / 关」")]
+        [DefaultValue(true)]
+        [ToggleSwitch]
+        public bool ToggleSwitchDefault { 
+            get=> _ToggleSwitchDefault;
+            set 
+            {
+                _ToggleSwitchDefault = value;
+            }
+        }
+
+        [Category("XIV. 布尔开关（ToggleSwitch）演示 ★")]
+        [DisplayName("自定义开关文字")]
+        [Description("[ToggleSwitch(\"已启用\", \"已禁用\")] 特性：状态文字可自定义")]
+        [DefaultValue(false)]
+        [ToggleSwitch("已启用", "已禁用")]
+        public bool ToggleSwitchCustomText { get; set; }
+
+        [Category("XIV. 布尔开关（ToggleSwitch）演示 ★")]
+        [DisplayName("无特性 bool（对照）")]
+        [Description("未标注 [ToggleSwitch] 的 bool 属性：保持原有显示（仅开关，无状态文字）")]
+        [DefaultValue(true)]
+        public bool PlainBoolCompare { get; set; } = true;
+
         private static bool IsEnglish() =>
             !LocalizationManager.CurrentCulture.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
 
@@ -397,11 +525,9 @@ namespace PropertyGridDemo.Models
                 "NightVisionColor" => "Night Vision Color",
                 "Brightness" => "Brightness",
                 "Contrast" => "Contrast",
-                "Sharpness" => "Sharpness",
                 "IpAddress" => "IP Address",
                 "RtspPort" => "RTSP Port",
                 "Username" => "Username",
-                "Password" => "Password",
                 "UseHttps" => "Use HTTPS",
                 "Protocol" => "Protocol",
                 "RecordDirectory" => "Record Directory",
@@ -411,29 +537,30 @@ namespace PropertyGridDemo.Models
                 "NvrChannel" => "NVR Channel",
                 "EnabledAnalyses" => "Enabled Analyses",
                 "SliceMinutes" => "Slice Minutes",
-                "Bitrate" => "Bitrate",
                 "LoopRecording" => "Loop Recording",
                 "MainZone" => "Main Zone",
                 "RestrictedZone" => "Restricted Zone",
                 "DutyPersonnel" => "Duty Personnel",
-                "AlertEmails" => "Alert Emails",
                 "CruisePoints" => "Cruise Points",
                 "ZoneSensitivity" => "Zone Sensitivity",
-                "AlarmLevels" => "Alarm Levels",
                 "PresetCoordinates" => "Preset Coordinates",
                 "NestedZoneConfig" => "Nested Zone Config",
-                "ZoneAlerts" => "Zone Alerts",
                 "NameFormula" => "Name Binding",
                 "DurationFormula" => "Duration Binding",
-                "BrightnessFormula" => "Brightness Binding",
-                "RecordEnabledFormula" => "Record Binding",
                 "SnapshotButton" => "Take Snapshot",
                 "RebootButton" => "Reboot",
                 "ExportButton" => "Export Config",
                 "SnapshotCount" => "Snapshot Count",
-                "RunState" => "Run State",
                 "FirmwareVersion" => "Firmware Version",
                 "HardwareSn" => "Hardware S/N",
+                "ToggleSwitchDefault" => "Toggle Switch (default text)",
+                "ToggleSwitchCustomText" => "Toggle Switch (custom text)",
+                "PlainBoolCompare" => "Plain Bool (no attribute)",
+                "Remarks" => "Remarks",
+                "RuntimeType" => "Runtime Type",
+                "LinkedType" => "Linked Type",
+                "MiscNote" => "Misc Note",
+                "MiscDebugFlag" => "Misc Debug Flag",
                 _ => null
             };
         }
@@ -449,6 +576,9 @@ namespace PropertyGridDemo.Models
                 "BodyColor" => "Main color of the camera housing",
                 "LedColor" => "Indicator light color when running",
                 "NightVisionColor" => "IR fill light color for night vision (nullable)",
+                "ToggleSwitchDefault" => "ToggleSwitch attribute, default on/off text",
+                "ToggleSwitchCustomText" => "ToggleSwitch attribute with custom state text",
+                "PlainBoolCompare" => "Plain bool without the ToggleSwitch attribute (unchanged look)",
                 _ => null
             };
         }
@@ -470,7 +600,10 @@ namespace PropertyGridDemo.Models
                 "SnapshotButton" or "RebootButton" or "ExportButton" or "SnapshotCount" => "X. Action Buttons",
                 "FileSize" or "FocalLength" or "NetworkLatency" => "XI. ★ Host Extension",
                 "FirmwareVersion" or "HardwareSn" => "XII. Read-Only & Hidden",
+                "ToggleSwitchDefault" or "ToggleSwitchCustomText" or "PlainBoolCompare" => "XIV. ToggleSwitch Demo",
                 "SortParam1" or "SortParam2" or "SortParam3" or "SortParam10" or "SortParamA" or "SortParamB" or "SortParamC" or "SortParamRoman1" or "SortParamRoman2" or "SortParamRoman3" => "XIII. Sort Demo",
+                "Remarks" or "RuntimeType" or "LinkedType" => "XV. Multiline & Type",
+                "MiscNote" or "MiscDebugFlag" => "Misc",
                 _ => null
             };
         }
@@ -535,8 +668,6 @@ namespace PropertyGridDemo.Models
 
     public enum TransportProtocol { Rtsp, Onvif, Hikvision, Dahua, Rtmp }
 
-    public enum RunState { Ready, Running, Recording, Warning, Error, Offline }
-
     // ==================== 其他演示类型 ====================
 
     [Serializable]
@@ -556,40 +687,4 @@ namespace PropertyGridDemo.Models
         public FormulaBound<double> Brightness { get; set; } = new FormulaBound<double>();
         public override string ToString() => $"SampleObject2: {CreatedTime}";
     }
-
-    public class SampleObject3
-    {
-        [Category("基本信息")]
-        [DisplayName("创建时间")]
-        public DateTime CreatedTime { get; set; } = DateTime.Now;
-        [Category("引用类型")]
-        [DisplayName("嵌套配置绑定")]
-        [FormulaEditor(typeof(DemoFormulaTreeProvider))]
-        public FormulaBound<SampleObject2> NestedConfigFormula { get; set; } = new FormulaBound<SampleObject2> { Value = new SampleObject2() };
-        public override string ToString() => $"SampleObject3: {CreatedTime}";
-    }
-
-    [Serializable]
-    public class NestedConfig
-    {
-        [Category("嵌套配置")]
-        [DisplayName("配置名称")]
-        [FormulaEditor(typeof(DemoFormulaTreeProvider))]
-        public FormulaBound<string> ConfigName { get; set; } = new FormulaBound<string> { Value = "默认配置" };
-        [Category("嵌套配置")]
-        [DisplayName("配置权重")]
-        [FormulaEditor(typeof(DemoFormulaTreeProvider))]
-        public FormulaBound<int> ConfigWeight { get; set; } = new FormulaBound<int> { Value = 100 };
-        [Category("嵌套配置")]
-        [DisplayName("普通属性")]
-        public int PlainValue { get; set; } = 42;
-    }
-
-    public enum DockStyle { None, Top, Bottom, Left, Right, Fill }
-
-    public enum HorizontalAlignmentType { Left, Center, Right, Stretch }
-
-    public enum LogLevel { Debug, Info, Warning, Error, Fatal }
-
-    public enum ProtocolType { Tcp, Udp, Http, WebSocket, Mqtt }
 }

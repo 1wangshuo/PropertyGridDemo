@@ -9,7 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PropertyGridLib" Version="1.2.0" />
+    <!-- 本仓库内开发：直接引用库工程，保证 sln 一次构建即可用上最新控件（含 PropertyGridPro）；
+         库工程仍保持 GeneratePackageOnBuild=true，可正常打包到 nuget\ 目录。
+         如需切换回“消费已发布包”的模式，改回下面这行即可（注意同步提升包版本并刷新本地包缓存）：
+         <PackageReference Include="PropertyGridLib" Version="1.3.0" /> -->
+    <ProjectReference Include="..\PropertyGridLib\PropertyGridLib.csproj" />
   </ItemGroup>
 
 </Project>

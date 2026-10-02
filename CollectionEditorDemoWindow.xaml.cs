@@ -28,6 +28,36 @@ namespace PropertyGridDemo
             set { _formula2 = value; OnPropertyChanged(); UpdateFormulaValues(); }
         }
 
+        // ===== SDK 独立控件演示：FilePathControl / FormulaSwitchControl =====
+
+        private string _sdkFilePath = "D:\\demo\\cam.log";
+        public string SdkFilePath
+        {
+            get => _sdkFilePath;
+            set { _sdkFilePath = value; OnPropertyChanged(); }
+        }
+
+        private string _sdkDirectory = "D:\\demo";
+        public string SdkDirectory
+        {
+            get => _sdkDirectory;
+            set { _sdkDirectory = value; OnPropertyChanged(); }
+        }
+
+        private string _sdkSwitchText = "直接输入的值";
+        public string SdkSwitchText
+        {
+            get => _sdkSwitchText;
+            set { _sdkSwitchText = value; OnPropertyChanged(); }
+        }
+
+        private string _sdkSwitchFormula = "&{Sensors,Temperature,Value}";
+        public string SdkSwitchFormula
+        {
+            get => _sdkSwitchFormula;
+            set { _sdkSwitchFormula = value; OnPropertyChanged(); }
+        }
+
         public CollectionEditorDemoWindow()
         {
             DirectTreeNodes = new List<FormulaTreeNode>
