@@ -9,11 +9,11 @@ AIGC:
     ReservedCode2: 4Hp+f6lMNwcja/oPDGcvEgAZJTq5Xn/Hv7brSIW1zKcct02t/OjLuDrKP1qcLl6tvIn7IufLFQASFPXe+SKalP/x1yoMX1Zz+c2McnyQTGJFJojQgmkITP8U0nGXiNtIvURv0/OIOfvpgYQamjiTkBz0XEyzO+ZGZho56xCf5TE8JC3/73fseYOphRo=
 ---
 
-# PropertyGridLib 技能文档（v1.3.0）
+# PropertyGridLib 技能文档（v1.6.0）
 
 > WPF PropertyGrid 控件库 **PropertyGridLib** 与官方演示程序 **PropertyGridDemo** 的多页使用文档入口。
 >
-> 版本：**1.3.0** ｜ 更新日期：2026-09-15 ｜ 作者：WangShuo ｜ 许可：MIT
+> 版本：**1.6.0** ｜ 更新日期：2026-10-15 ｜ 作者：WangShuo ｜ 许可：MIT
 
 ![PropertyGrid 基础控件（浅色主题）](images/propertygrid-main-light.png)
 
@@ -39,17 +39,17 @@ AIGC:
 | 目录 / 工程 | 类型 | 说明 |
 |------------|------|------|
 | `PropertyGridLib/` | WPF 类库（NuGet 包） | 控件本体：`PropertyGrid`、`PropertyGridPro`、8 个自定义特性、集合/字典/公式/颜色等编辑器与对话框 |
-| `PropertyGridDemo/` | WPF 演示程序（.NET Framework 4.8） | 「智能监控摄像头配置」示例模型（I ~ XIV 共 14 个分组）+ 3 个演示窗口 |
+| `PropertyGridDemo/` | WPF 演示程序（多目标：`net48` / `net6.0-windows` / `net8.0-windows` / `net10.0-windows`） | 「智能监控摄像头配置」示例模型（I ~ XV 共 15 个分组）+ 4 个演示窗口 |
 | `PropertyGridDemo/skill/` | 文档 | 本技能文档与 `skill/images/` 截图资源（随演示仓库一并发布） |
-| `nuget/` | 产物 | 本地构建的 `PropertyGridLib.*.nupkg` / `.snupkg` |
+| `nuget/` | 产物 | 本地构建的 `PropertyGridLib.*.nupkg` / `.snupkg`（已加入 `.gitignore`，不上传仓库） |
 
 **运行环境要求**
 
 | 项目 | 要求 |
 |------|------|
-| 目标框架（类库） | `net48`、`netcoreapp3.0`、`netcoreapp3.1`、`net6.0-windows`、`net7.0-windows`、`net8.0-windows` |
+| 目标框架（类库） | `net48`、`netcoreapp3.0`、`netcoreapp3.1`、`net6.0-windows`、`net7.0-windows`、`net8.0-windows`、`net10.0-windows` |
 | UI 依赖 | [HandyControl](https://github.com/HandyOrg/HandyControl) 3.5.1（已通过 Costura.Fody 内嵌，宿主无需单独附带） |
-| 开发环境 | Visual Studio 2022 / .NET SDK 6.0+（演示程序为 .NET Framework 4.8，需安装 .NET Framework 4.8 开发工具） |
+| 开发环境 | Visual Studio 2022 / .NET SDK 6.0+（演示程序多目标，跑 net48 需装 .NET Framework 4.8 开发工具，跑 net10 需 .NET 10 SDK） |
 
 ---
 
@@ -57,16 +57,16 @@ AIGC:
 
 ```powershell
 # Package Manager Console
-Install-Package PropertyGridLib -Version 1.3.0
+Install-Package PropertyGridLib -Version 1.6.0
 ```
 
 ```bash
 # CLI
-dotnet add package PropertyGridLib --version 1.3.0
+dotnet add package PropertyGridLib --version 1.6.0
 ```
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.3.0" />
+<PackageReference Include="PropertyGridLib" Version="1.6.0" />
 ```
 
 > 离线部署：直接引用 `PropertyGridLib.dll` 即可，HandyControl、System.Text.Json 等依赖已内嵌进单一 DLL。
@@ -119,6 +119,9 @@ propertyGrid.RefreshProperties();        // 重新反射对象、刷新列表
 
 | 版本 | 日期 | 要点 |
 |------|------|------|
+| **1.6.0** | 2026-10-15 | 修掉「重置所有属性」连续点击闪退（颜色编辑器色块改绑控件独占画刷）、复杂对象值区改显友好类型名、多层嵌套可逐层展开、浮点数值不再显示长尾数、公式绑定默认进入已绑定态、集合/字典编辑器列表随属性刷新、去除行内修改红点、事件页分类折叠 + 底部描述栏、分类头改用面板色；新增 `net10.0-windows` 目标 |
+| 1.5.0 | 2026-10-14 | 修复 `FormulaSwitchControl` 在公式模式下普通输入框与公式输入框重叠的问题；新增 `EventPicker` 独立事件编辑器演示窗口 |
+| 1.4.0 | 2026-09-24 | 属性列表 UI 虚拟化（重建 206ms → 8ms）；新增 `ShowEventsPage` 事件页能力、`EnableVirtualization` / `TitlePlacement` / `TitleFontWeight` / `CategoryFontWeight` 开关 |
 | **1.3.0** | 2026-09-15 | 新增 `PropertyGridPro` 平铺参数面板、卡片式行布局、主题色跟随、无限嵌套样式统一、公式绑定接入、复位按钮常驻占位、`[ToggleSwitch]` 布尔开关；清理演示旧模型；新增本套技能文档 |
 | 1.2.0 | 2026-09-07 | 已发布版本 |
 
@@ -139,4 +142,5 @@ propertyGrid.RefreshProperties();        // 重新反射对象、刷新列表
 | `toggle-switch-*` | `[ToggleSwitch]` 布尔开关（整区、单行、开/关状态） |
 | `reset-button-*` | 复位按钮常驻占位（基础 / Pro，浅色 / 深色） |
 | `formula-binding-*` / `formula-tree-popup-*` | 公式绑定区与公式树弹窗 |
+| `event-picker-*` | `EventPicker` 事件页（分类折叠 + 底部描述栏） |
 *（内容由AI生成，仅供参考）*
