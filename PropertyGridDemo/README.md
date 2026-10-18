@@ -2,7 +2,7 @@
 
 [PropertyGridLib](https://www.nuget.org/packages/PropertyGridLib) 的官方演示项目 — WPF PropertyGrid 控件库，仿 WinForms PropertyGrid，基于 HandyControl UI 库。
 
-> **作者：WangShuo** | 目标框架：.NET Framework 4.8
+> **作者：WangShuo** | 目标框架：`net48` / `net6.0-windows` / `net8.0-windows` / `net10.0-windows`（多目标）
 
 ## 项目介绍
 
@@ -49,6 +49,32 @@
 - **布尔开关特性** `[ToggleSwitch]`（滑块开关 + 可定制状态文字）
 
 ---
+
+## v1.6.0 更新要点
+
+| 变更 | 说明 |
+|------|------|
+| 「重置所有属性」闪退修复 | 颜色编辑器行内色块改绑控件独占画刷（不再每次新建/释放画刷），修掉连点重置时 `SolidColorBrush.ReleaseOnChannelCore` 抛 `0x8000FFFF` 导致 Demo 退出；虚拟化开 60 轮、关 30 轮、Pro 30 轮压测全过 |
+| 复杂对象值区友好显示 | 未重写 `ToString()` 的嵌套配置类不再显示 `命名空间.类名` 全名，改显去命名空间的友好类型名；类型上的 `[DisplayName]` 优先；重写了 `ToString()` 的输出不变 |
+| 多层嵌套可逐层展开 | 第二层及更深层此前点箭头无反应（子项事件未冒泡到网格），现可逐层展开任意深度 |
+| 浮点数值不再显示长尾数 | double/float 按有效数字（G15/G7）显示，`1.2000000000000002 → 1.2`、`0.1+0.2 → 0.3`；底层值不变 |
+| 公式绑定「打开即已绑定」 | 公式已有内容时默认进入已绑定状态：`FormulaSwitchControl` 默认公式模式；`[FormulaEditor]` 属性行默认展开公式条 |
+| 集合/字典编辑器列表随属性刷新 | 在内嵌属性页改了条目属性（名称/选项）后，左侧列表行显示文本即时重算；只刷显示、不动数据与选中项 |
+| 去除行内修改红点 | 紧凑布局（TitlePlacement=Left）属性名旁的红色「已修改」圆点移除，仅保留行尾 `R` 复位按钮这一个标识 |
+| 事件页对齐属性页 | `EventPicker` 分类头可折叠（折叠状态跨搜索重建保留）、选中带说明的事件行时底部出现描述栏；列表仍是「压平 + 虚拟化」 |
+| 分类头改用面板色 | 分类头 Expander 显式取 `RegionBrush`（浅色皮肤=白、深色皮肤=深色面板），不再用默认的 `SecondaryRegionBrush` 灰带 |
+| 多 .NET 目标 | Demo 与库都支持多目标：Demo 为 `net48` / `net6.0-windows` / `net8.0-windows` / `net10.0-windows`，库为上述 + `netcoreapp3.0/3.1` / `net7.0-windows`；NuGet 包随附全部程序集 |
+| .NET 10 运行时 | 自包含发布产物位于 `publish/net10-win-x64/`，目标机器无需预装 .NET |
+
+事件页（`EventPicker`）：分类头可折叠，选中带说明的事件行时底部出现描述栏 ——
+
+![EventPicker 事件页（浅色）](skill/images/event-picker-light.png)
+
+分类头底色取自主题面板色（浅色皮肤为白、深色皮肤为深色面板，不再是一条突兀的灰带）：
+
+| 浅色 | 深色 |
+|---|---|
+| ![开关区浅色](skill/images/toggle-switch-area-light.png) | ![开关区深色](skill/images/toggle-switch-area-dark.png) |
 
 ## v1.5.0 更新要点
 
@@ -100,10 +126,10 @@ dotnet build PropertyGridDemo.csproj
 |------|------|
 | **控件库（NuGet）** | https://www.nuget.org/packages/PropertyGridLib |
 | **使用文档（技能文档）** | [skill/SKILL.md](skill/SKILL.md) |
-| **NuGet 包** | `Install-Package PropertyGridLib -Version 1.5.0` |
+| **NuGet 包** | `Install-Package PropertyGridLib -Version 1.6.0` |
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.5.0" />
+<PackageReference Include="PropertyGridLib" Version="1.6.0" />
 ```
 
 ## 许可证

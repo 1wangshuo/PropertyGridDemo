@@ -10,8 +10,10 @@
 
     <Grid Margin="16">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="640"/>
-            <ColumnDefinition Width="16"/>
+            <!-- 左面板宽度可拖：初始 640，最小 420（再窄标题列就没有呼吸空间），
+                 拖动时实时重排，可直观看到行内容始终靠左、编辑器紧跟标题、空白留在右侧 -->
+            <ColumnDefinition Width="640" MinWidth="420"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -25,7 +27,7 @@
 
             <Border DockPanel.Dock="Top"
                     Background="{DynamicResource SecondaryRegionBrush}"
-                    CornerRadius="8" Padding="12" Margin="0,0,0,8">
+                    CornerRadius="8" Padding="12" Margin="0,0,8,8">
                 <StackPanel Orientation="Horizontal">
                     <Button Content="从模型刷新" Padding="14,6" Margin="0,0,8,0"
                             Click="Refresh_Click"/>
@@ -38,7 +40,16 @@
                 </StackPanel>
             </Border>
 
+            <Border DockPanel.Dock="Top" CornerRadius="6" Padding="10,6" Margin="0,0,8,8"
+                    Background="{DynamicResource RegionBrush}"
+                    BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="1">
+                <TextBlock Foreground="{DynamicResource SecondaryTextBrush}" TextWrapping="Wrap" FontSize="12">
+                    <Run Text="↔ 拖动两栏中间的分割条把面板拉宽：属性名始终贴卡片左缘，值编辑器固定在卡片右侧（宽 300），多出来的空间落在两栏之间。"/>
+                </TextBlock>
+            </Border>
+
             <pg:PropertyGridPro x:Name="proGrid"
+                                Margin="0,0,8,0"
                                 EditorWidth="300"
                                 Header="参数配置"
                                 HeaderDescription="平铺参数面板示例：与 PropertyGrid 演示共用同一模型（PropertyGridDemo.Models.SampleObject，智能监控摄像头配置，I ~ XV 共 15 个分组）。顶部搜索框支持多关键词过滤（空格分隔），匹配显示名、属性名、说明与分类。"
@@ -49,6 +60,36 @@
                                 PropertyValueChanged="ProGrid_PropertyValueChanged"
                                 ButtonClicked="ProGrid_ButtonClicked"/>
         </DockPanel>
+
+        <!-- ========== 可拖拽分割条（10px 热区，中间 2px 主题色竖线，悬停/按下变主题主色） ========== -->
+        <GridSplitter Grid.Column="1" Width="10"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      ResizeBehavior="BasedOnAlignment"
+                      ResizeDirection="Columns"
+                      ShowsPreview="False"
+                      Background="Transparent"
+                      KeyboardNavigation.IsTabStop="False"
+                      ToolTip="拖动调整参数面板宽度">
+            <GridSplitter.Template>
+                <ControlTemplate TargetType="GridSplitter">
+                    <Border Background="{TemplateBinding Background}">
+                        <Border Width="2" HorizontalAlignment="Center"
+                                CornerRadius="1"
+                                Background="{DynamicResource BorderBrush}">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
+                    </Border>
+                </ControlTemplate>
+            </GridSplitter.Template>
+        </GridSplitter>
 
         <!-- ========== 右侧：使用说明 ========== -->
         <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
@@ -73,7 +114,9 @@
                             <LineBreak/>
                             <Run Text="5. 配色跟随主题：面板不定义任何自定义画刷，全部取自项目现有主题键（RegionBrush / SecondaryRegionBrush / BorderBrush / PrimaryTextBrush / SecondaryTextBrush / PrimaryBrush），点击“切换主题”可在浅色与深色间即时切换验证。"/>
                             <LineBreak/>
-                            <Run Text="6. 公式绑定：[FormulaEditor] / FormulaBound&lt;T&gt; 属性（如“IX. 公式绑定”分组下的摄像头名称绑定、标定比例绑定）在值编辑器下方显示公式栏，点击链接图标从公式树中选择绑定源，行为与 PropertyGrid 完全一致。"/>
+                            <Run Text="6. 公式绑定：[FormulaEditor] / FormulaBound&lt;T&gt; 属性（如“IX. 公式绑定”分组下的摄像头名称绑定、标定比例绑定）在值编辑器下方显示公式栏，点击链接图标从公式树中选择绑定源，行为与 PropertyGrid 完全一致。公式已有内容时该行默认就是展开的绑定状态（如“标定比例绑定”已预置 &amp;{Flow1,Task2,Output}），不用再手动点开。"/>
+                            <LineBreak/>
+                            <Run Text="7. 宽度自适应：拖动两栏之间的分割条（或直接把窗口拉宽）——属性名贴卡片左缘、值编辑器固定在卡片右侧，新增空间落在两栏之间；拖窄时先压缩标题列（超长名单行省略），编辑器宽度始终保持不变。"/>
                         </TextBlock>
                     </StackPanel>
                 </Border>

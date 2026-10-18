@@ -36,6 +36,17 @@ namespace PropertyGridLib.Dialogs
             LoadItems(collection);
             if (_isReadOnly)
                 EnterReadOnlyMode();
+
+            // 右侧属性页改的是条目对象本身（引用不变），列表行的显示文本是加载时算好的一次性快照，
+            // 不订阅值变更就会一直停在旧名称（改了「预置位名称」但左侧列表仍显示旧名）。
+            // 这里每次值变更后按当前对象重算显示文本，只刷显示、不重建 ItemsSource。
+            ItemPropertyGrid.PropertyValueChanged += OnItemPropertyValueChanged;
+        }
+
+        /// <summary>内嵌属性页值变更 → 刷新左侧列表行的显示文本（数据与选中项均不动）</summary>
+        private void OnItemPropertyValueChanged(object sender, PropertyValueChangedEventArgs e)
+        {
+            ListBoxItemData.RefreshDisplayTexts(ItemsListBox.ItemsSource as System.Collections.IEnumerable);
         }
 
         /// <summary>只读查看模式：隐藏功能按钮，仅可浏览；
@@ -231,10 +242,43 @@ namespace PropertyGridLib.Dialogs
         }
     }
 
-    public class ListBoxItemData
+    /// <summary>集合编辑器列表行的显示数据。
+    /// 实现 INotifyPropertyChanged 的目的：嵌套属性页就地修改条目属性后，只需更新该行的显示文本，
+    /// 而不必重建 ItemsSource（重建会丢掉选中项、并让列表跳到别的行）。</summary>
+    public class ListBoxItemData : System.ComponentModel.INotifyPropertyChanged
     {
         public int Index { get; set; }
-        public string DisplayText { get; set; }
+
+        private string _displayText;
+        public string DisplayText
+        {
+            get => _displayText;
+            set
+            {
+                if (_displayText == value) return;
+                _displayText = value;
+                PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(DisplayText)));
+            }
+        }
+
         public object Value { get; set; }
+
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>
+        /// 按各行当前对象的 ToString 重算显示文本（内容没变的行不发通知）。
+        /// 集合编辑器在「内嵌属性页值变更」后调用：属性页改的是条目对象本身（引用不变），
+        /// 而列表行文本是加载时算好的一次性快照，不重算就会一直显示旧名称。
+        /// 只刷显示层 —— 不动数据、不重建 ItemsSource、不影响选中项。
+        /// </summary>
+        public static void RefreshDisplayTexts(System.Collections.IEnumerable rows)
+        {
+            if (rows == null) return;
+            foreach (var row in rows)
+            {
+                if (row is ListBoxItemData data)
+                    data.DisplayText = data.Value?.ToString() ?? "(null)";
+            }
+        }
     }
 }

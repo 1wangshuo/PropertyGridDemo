@@ -26,6 +26,10 @@ namespace PropertyGridLib.Controls
         public CollectionEditorControl()
         {
             InitializeComponent();
+            // 内嵌属性页改的是条目对象本身（引用不变），列表行显示文本是加载时的一次性快照，
+            // 不订阅值变更就会一直停在旧名称；每次值变更按当前对象重算显示文本（只刷显示层）。
+            ItemPropertyGrid.PropertyValueChanged += (s, e) =>
+                ListBoxItemData.RefreshDisplayTexts(ItemsListBox.ItemsSource as IEnumerable);
         }
 
         private static void OnItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

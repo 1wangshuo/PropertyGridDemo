@@ -1,8 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net48</TargetFramework>
+    <!-- 多目标：legacy net48（现场老机器）+ LTS net6/net8 + 最新 net10。
+         与控件库的 TFM 覆盖面保持一致的“可运行 Demo”，文档截图统一取 net10 构建产物。 -->
+    <TargetFrameworks>net48;net6.0-windows;net8.0-windows;net10.0-windows</TargetFrameworks>
+    <!-- publish\ 是自包含发布输出，位于工程目录内。默认通配会把里面的运行时 DLL 当成本工程引用，
+         net48 目标会因此报 MSB3277 版本冲突，这里显式排除。 -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish\**</DefaultItemExcludes>
     <UseWPF>true</UseWPF>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

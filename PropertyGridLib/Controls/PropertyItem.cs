@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -109,6 +110,21 @@ namespace PropertyGridLib.Controls
             // 按钮属性没有"值/展开"语义，禁用展开
             if (CustomEditor == CustomEditorType.Button)
                 IsExpandable = false;
+
+            // 公式已有内容（宿主已绑定）：默认展开公式条，直接呈现「已绑定」状态，
+            // 而不是停在原始值编辑器上、等用户去点绑定按钮。空公式保持默认收起。
+            if (IsFormulaEnabled)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(FormulaString))
+                        _isFormulaEditorOpen = true;
+                }
+                catch
+                {
+                    // 个别 FormulaBound 实例取值失败时保持默认收起，不影响属性项构建
+                }
+            }
         }
 
         #endregion
@@ -183,6 +199,66 @@ namespace PropertyGridLib.Controls
             }
 
             return type.Name;
+        }
+
+        /// <summary>
+        /// 复杂对象在属性格只读值区的显示文本（可展开对象行右侧、平铺行同此来源）：
+        /// <list type="bullet">
+        /// <item>重写了 <see cref="object.ToString"/> 的类型，尊重其自定义输出；</item>
+        /// <item>否则优先取类型级 <see cref="DisplayNameAttribute"/>（可给配置类起业务名）；</item>
+        /// <item>再回退友好类型名：去掉命名空间、展开泛型参数——
+        /// 默认 ToString 输出的 <c>命名空间.类名</c>（如 Ext.FlowWork.Settings.AutoBackupOptions）又长又不可读。</item>
+        /// </list>
+        /// 未重写 ToString 的结构体（继承自 ValueType.ToString）同样回退友好名。
+        /// </summary>
+        private static string GetComplexValueDisplay(object value)
+        {
+            var type = value.GetType();
+            // 枚举：ToString 返回成员名（如 End），保持原样不做类型名回退
+            if (type.IsEnum) return value.ToString() ?? string.Empty;
+            var toStringMethod = type.GetMethod(nameof(object.ToString), Type.EmptyTypes);
+            if (toStringMethod != null
+                && toStringMethod.DeclaringType != typeof(object)
+                && toStringMethod.DeclaringType != typeof(ValueType))
+            {
+                return value.ToString() ?? string.Empty;
+            }
+
+            var typeDisplayName = TypeDescriptor.GetAttributes(type)
+                .OfType<DisplayNameAttribute>()
+                .FirstOrDefault(a => !string.IsNullOrEmpty(a.DisplayName))?.DisplayName;
+            return string.IsNullOrEmpty(typeDisplayName)
+                ? GetFriendlyTypeName(type)
+                : typeDisplayName;
+        }
+
+        /// <summary>
+        /// 浮点数值的显示格式化：按有效数字输出以消除二进制舍入噪声，且不损失常规业务精度。
+        /// <paramref name="generalFormat"/> 为有效数字格式（double 用 G15、float 用 G7）；
+        /// 当结果落到科学计数法（含 'E'/'e'，如极小值 1.5E-05）时改用
+        /// <paramref name="fixedFormat"/> 定点格式，避免配置面板里出现 E 记数写法。
+        /// 只影响显示文本，底层存储与序列化保持原始双精度值不变。
+        /// </summary>
+        private static string FormatFloatingPoint(IFormattable value, string generalFormat, string fixedFormat)
+        {
+            var text = value.ToString(generalFormat, CultureInfo.CurrentCulture);
+            if (text.IndexOf('E') >= 0 || text.IndexOf('e') >= 0)
+            {
+                // 定点格式位数有限（double 15 位小数 / float 6 位小数），对极小值会整串截断成 0
+                // （如 1e-16 → "0.000000000000000"），把非零值显示成 0、误导用户；
+                // 这种情况保留科学计数写法（1E-16）反而更准确。
+                var fixedText = value.ToString(fixedFormat, CultureInfo.CurrentCulture);
+                text = IsAllZeroDigits(fixedText) ? text : fixedText;
+            }
+            return text;
+        }
+
+        /// <summary>定点文本里是否没有任何 1-9 的有效数字（即该值被定点位数截断成了 0）</summary>
+        private static bool IsAllZeroDigits(string text)
+        {
+            foreach (var ch in text)
+                if (ch >= '1' && ch <= '9') return false;
+            return true;
         }
 
         /// <summary>枚举值列表</summary>
@@ -562,7 +638,16 @@ namespace PropertyGridLib.Controls
                         : $"#{cc.A:X2}{cc.R:X2}{cc.G:X2}{cc.B:X2}";
                 }
 
-                return Value.ToString() ?? string.Empty;
+                // 浮点数值：抹掉二进制舍入噪声，只改显示、不动真实值。
+                // 默认 ToString 给的是「最短往返表示」——会把噪声原样吐出：
+                // 滑块按 0.1 步进到 1.2 时 double 实为 1.2000000000000002，
+                // 数值框/滑块标签便显示成 1.2000000000000002（框宽不足还被裁成 1.200000000000）。
+                // G15（double，15 位有效数字）/ G7（float，7 位有效数字）足以覆盖常规业务值精度，
+                // 同时把 0.1+0.2→0.3、12*0.1→1.2 这类噪声归位；G 格式自带去尾零。
+                if (Value is double dbl) return FormatFloatingPoint(dbl, "G15", "0.###############");
+                if (Value is float flt) return FormatFloatingPoint(flt, "G7", "0.######");
+
+                return GetComplexValueDisplay(Value);
             }
             set
             {
@@ -1465,6 +1550,16 @@ namespace PropertyGridLib.Controls
             {
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ToggleStateText)));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ToggleStateTextVisibility)));
+            }
+            else if (propertyName == nameof(IsExpanded))
+            {
+                // 嵌套子项的展开/折叠必须逐级冒泡到顶层项：
+                // 网格（PropertyGrid / PropertyGridPro）只对顶层项挂钩 PropertyChanged
+                // （刷新循环里仅遍历 _allProperties），惰性加载出来的子项无人订阅。
+                // 子项自身 IsExpanded 变化若不冒泡，扁平行集合（BuildFlatRows）就不会重建，
+                // 现象即「第一层能展开、第二层及更深层点箭头无任何反应」。
+                // 冒泡到顶层项后由网格统一重建一次行集合；顶层项 Parent == null，链条自然终止。
+                Parent?.OnPropertyChanged(nameof(IsExpanded));
             }
         }
 

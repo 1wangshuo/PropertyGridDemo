@@ -14,6 +14,14 @@ UpgradeLog*.htm
 TestResults/
 *.VisualState.xml
 
+## WPF 临时编译工程（XAML 编译期生成，形如 PropertyGridDemo_xxx_wpftmp.csproj）
+*_wpftmp.csproj
+*_wpftmp.*
+*.binlog
+
+## Demo 的自包含发布输出（位于工程目录内，勿提交）
+PropertyGridDemo/publish/
+
 ## VS Code
 .vscode/
 

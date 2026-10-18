@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -134,6 +135,27 @@ namespace PropertyGridDemo
                 }
             });
 
+            // 事件页（1.6.0 新增）：分类头可折叠 + 选中带说明的事件行时底部出现描述栏。
+            // 截整窗（含左侧说明）：描述栏贴在列表下方，单独裁控件时会被自身的边界裁掉半行。
+            TryShot("event-picker-light", () =>
+            {
+                var w = new EventPickerDemoWindow();
+                Show(w, 900, 640);
+                var picker = LogicalTreeHelper.FindLogicalNode(w, "EventPicker") as EventPicker;
+                if (picker?.Events != null)
+                    picker.SelectedEvent = picker.Events.FirstOrDefault(ev => ev.Name == "Click");
+                // 描述栏的显隐由绑定驱动，触发的是「重排」不是「重绘」：
+                // 微调窗口尺寸再复原，逼整棵树走一次真正的 measure/arrange，否则截图停在中间态。
+                w.Width += 1; w.Width -= 1;
+                w.UpdateLayout();
+                dispatcher.Invoke(() => { }, DispatcherPriority.DataBind);
+                w.UpdateLayout();
+                dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+                dispatcher.Invoke(() => { }, DispatcherPriority.ContextIdle);
+                if (w.Content is Visual root) Save(root, "event-picker-light");
+                w.Close();
+            });
+
             // ===== 深色 =====
             ThemeHelper.Apply(SkinType.Dark);
 
@@ -147,6 +169,24 @@ namespace PropertyGridDemo
             {
                 var w = NewProWindow();
                 { Show(w, 1200, 800); Save(w, "pro-overview-dark"); w.Close(); }
+            });
+
+            // 深色下的开关区（与 toggle-switch-area-light 同一切片，便于文档并列对照）
+            TryShot("toggle-switch-area-dark", () =>
+            {
+                var w = NewProWindow();
+                {
+                    Show(w, 1200, 800);
+                    var g = Find(w, "proGrid");
+                    if (g != null)
+                    {
+                        g.SearchText = "开关";
+                        w.UpdateLayout();
+                        dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+                        SaveElementCrop(g, 0, 192, 0, 400, "toggle-switch-area-dark");
+                    }
+                    w.Close();
+                }
             });
 
             ThemeHelper.Apply(SkinType.Default);

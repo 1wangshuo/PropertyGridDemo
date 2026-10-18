@@ -26,6 +26,53 @@ namespace PropertyGridLib.Controls
                 new FrameworkPropertyMetadata(typeof(ColorEditControl)));
         }
 
+        /// <summary>
+        /// 色块预览专用画刷：**本元素独占、不冻结、只就地改 Color**。
+        /// 关键点：色块 Background 的绑定值从头到尾是同一个实例，值变化时不发生「换画刷」，
+        /// WPF 也就不会走「把旧画刷从组合通道上释放」那条路径 —— 该路径在虚拟化回收/连续重置场景下
+        /// 会抛 COMException 0x8000FFFF（E_UNEXPECTED），实测「重置所有属性」第二次必崩
+        /// （SolidColorBrush.ReleaseOnChannelCore → Visual.DisconnectAttachedResource → RenderClose → Arrange）。
+        /// 之前走 ColorToBrushConverter 每次求值都产生新实例，正是这个释放循环的来源。
+        /// </summary>
+        private readonly SolidColorBrush _swatchBrush = new SolidColorBrush(Colors.Transparent);
+
+        /// <summary>模板里色块 Border 的 Background 绑定到此（同一实例，只改 Color）</summary>
+        public Brush SwatchBrush => _swatchBrush;
+
+        private System.ComponentModel.INotifyPropertyChanged _watchedItem;
+
+        public ColorEditControl()
+        {
+            DataContextChanged += OnDataContextChanged;
+        }
+
+        private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (_watchedItem != null) _watchedItem.PropertyChanged -= OnItemPropertyChanged;
+            _watchedItem = e.NewValue as System.ComponentModel.INotifyPropertyChanged;
+            if (_watchedItem != null) _watchedItem.PropertyChanged += OnItemPropertyChanged;
+            UpdateSwatch();
+        }
+
+        private void OnItemPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PropertyItem.Value) || e.PropertyName == nameof(PropertyItem.ValueString))
+                UpdateSwatch();
+        }
+
+        private void UpdateSwatch()
+        {
+            var color = DataContext is PropertyItem pi ? ValueToColor(pi.Value) : (Color?)null;
+            _swatchBrush.Color = color ?? Colors.Transparent;
+        }
+
+        private static Color? ValueToColor(object value)
+        {
+            if (value is Color c) return c;
+            if (value is SolidColorBrush scb) return scb.Color;
+            return null;
+        }
+
         public override void OnApplyTemplate()
         {
             base.OnApplyTemplate();
@@ -167,9 +214,8 @@ namespace PropertyGridLib.Controls
             }
             else if (underlying == typeof(SolidColorBrush))
             {
-                var frozen = new SolidColorBrush(selectedColor);
-                frozen.Freeze();
-                pi.Value = frozen;
+                // 走共享缓存：与色块 Background 用的是同一个冻结实例，避免每次新建/释放
+                pi.Value = Converters.ColorToBrushConverter.GetFrozenBrush(selectedColor);
             }
             else
             {
@@ -197,12 +243,8 @@ namespace PropertyGridLib.Controls
         {
             if (value == null) return null;
             if (value is SolidColorBrush scb) return scb;
-            if (value is Color c)
-            {
-                var b = new SolidColorBrush(c);
-                b.Freeze();
-                return b;
-            }
+            // Color → 共享的冻结画刷（每次 new 再 Freeze 会让旧实例在布局里被释放，见 ColorToBrushConverter 注释）
+            if (value is Color c) return Converters.ColorToBrushConverter.GetFrozenBrush(c);
             return null;
         }
     }

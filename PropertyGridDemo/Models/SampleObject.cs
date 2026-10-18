@@ -184,6 +184,11 @@ namespace PropertyGridDemo.Models
         [Description("可展开编辑禁区的详细参数（框架内置 Expandable）")]
         public DetectionZone RestrictedZone { get; set; } = new DetectionZone { Name = "禁区", Sensitivity = 10 };
 
+        [Category("VI. 检测区域")]
+        [DisplayName("多层嵌套配置（连续 4 层）")]
+        [Description("连续嵌套 4 层的复杂对象：第1层 区域方案 → 第2层 识别策略 → 第3层 告警规则 → 第4层 通知渠道（叶子层）。逐层点开验证深层展开箭头、层级缩进与每层叶子编辑器的呈现。")]
+        public ZoneScheme DeepNestedScheme { get; set; } = new ZoneScheme();
+
         // ============================================================
         // VII. 集合编辑器
         // ============================================================
@@ -593,7 +598,7 @@ namespace PropertyGridDemo.Models
                 "IpAddress" or "RtspPort" or "Username" or "UseHttps" or "Protocol" => "III. Network",
                 "RecordDirectory" or "SnapshotDirectory" or "ConfigImportFile" or "LogFilePath" => "IV. Storage",
                 "NvrChannel" or "EnabledAnalyses" or "SliceMinutes" or "LoopRecording" => "V. Advanced",
-                "MainZone" or "RestrictedZone" => "VI. Detection Zones",
+                "MainZone" or "RestrictedZone" or "DeepNestedScheme" => "VI. Detection Zones",
                 "DutyPersonnel" or "CruisePoints" => "VII. Collection Editor",
                 "ZoneSensitivity" or "PresetCoordinates" or "NestedZoneConfig" => "VIII. Dictionary Editor",
                 "NameFormula" or "DurationFormula" => "IX. Formula Binding",
@@ -630,6 +635,100 @@ namespace PropertyGridDemo.Models
         public bool EnableAiAnalysis { get; set; } = true;
 
         public override string ToString() => $"区域: {Name}";
+    }
+
+    // ==================== 连续 4 层嵌套演示（框架内置 Expandable，逐层点开） ====================
+    // 层级链：ZoneScheme(1) → StrategyPolicy(2) → AlertRule(3) → NotifyChannel(4, 叶子层)
+
+    /// <summary>第 1 层：区域方案</summary>
+    [Serializable]
+    public class ZoneScheme
+    {
+        [Category("第1层 · 区域方案")]
+        [DisplayName("方案名称")]
+        public string SchemeName { get; set; } = "周界防范方案";
+
+        [Category("第1层 · 区域方案")]
+        [DisplayName("方案已启用")]
+        [Description("总开关：关闭后下面 3 层配置均不生效")]
+        public bool Enabled { get; set; } = true;
+
+        [Category("第1层 · 区域方案")]
+        [DisplayName("识别策略（第2层）")]
+        [Description("继续点开进入第 2 层")]
+        public StrategyPolicy Strategy { get; set; } = new StrategyPolicy();
+
+        public override string ToString() => $"方案: {SchemeName}{(Enabled ? "" : "（已停用）")}";
+    }
+
+    /// <summary>第 2 层：识别策略</summary>
+    [Serializable]
+    public class StrategyPolicy
+    {
+        [Category("第2层 · 识别策略")]
+        [DisplayName("策略名称")]
+        public string PolicyName { get; set; } = "人形+车辆识别";
+
+        [Category("第2层 · 识别策略")]
+        [DisplayName("置信度阈值")]
+        [Description("低于该置信度的目标被丢弃（1-100）")]
+        [DefaultValue(70)]
+        [NumberSlider(1, 100, 1)]
+        public int Confidence { get; set; } = 75;
+
+        [Category("第2层 · 识别策略")]
+        [DisplayName("告警规则（第3层）")]
+        [Description("继续点开进入第 3 层")]
+        public AlertRule AlertRule { get; set; } = new AlertRule();
+
+        public override string ToString() => $"{PolicyName}（阈值 {Confidence}）";
+    }
+
+    /// <summary>第 3 层：告警规则</summary>
+    [Serializable]
+    public class AlertRule
+    {
+        [Category("第3层 · 告警规则")]
+        [DisplayName("规则名称")]
+        public string RuleName { get; set; } = "非工作时段闯入";
+
+        [Category("第3层 · 告警规则")]
+        [DisplayName("现场声光告警")]
+        public bool SoundAndLight { get; set; } = true;
+
+        [Category("第3层 · 告警规则")]
+        [DisplayName("通知渠道（第4层）")]
+        [Description("继续点开进入第 4 层（最内层叶子属性）")]
+        public NotifyChannel Channel { get; set; } = new NotifyChannel();
+
+        public override string ToString() => $"{RuleName}{(SoundAndLight ? " + 声光" : "")}";
+    }
+
+    /// <summary>第 4 层：通知渠道（叶子层，不含下一级对象）</summary>
+    [Serializable]
+    public class NotifyChannel
+    {
+        [Category("第4层 · 通知渠道")]
+        [DisplayName("渠道名称")]
+        public string ChannelName { get; set; } = "值班组";
+
+        [Category("第4层 · 通知渠道")]
+        [DisplayName("邮件通知")]
+        public bool EmailEnabled { get; set; } = true;
+
+        [Category("第4层 · 通知渠道")]
+        [DisplayName("短信通知")]
+        public bool SmsEnabled { get; set; } = false;
+
+        [Category("第4层 · 通知渠道")]
+        [DisplayName("失败重试次数")]
+        [Description("推送失败后的重试次数（0-5）")]
+        [DefaultValue(2)]
+        [NumberSlider(0, 5, 1)]
+        public int RetryCount { get; set; } = 2;
+
+        public override string ToString()
+            => $"{ChannelName}（邮件:{(EmailEnabled ? "开" : "关")} / 短信:{(SmsEnabled ? "开" : "关")} / 重试{RetryCount}）";
     }
 
     [Serializable]

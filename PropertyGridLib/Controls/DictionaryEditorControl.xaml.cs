@@ -43,6 +43,10 @@ namespace PropertyGridLib.Controls
         public DictionaryEditorControl()
         {
             InitializeComponent();
+            // 复杂键/值由内嵌属性页就地修改（对象引用不变）时不走 DictEntry 的 setter，
+            // 列表行会停在旧文本 —— 订阅两张属性页的值变更，改完即重算行显示（只刷显示层）。
+            KeyPropertyGrid.PropertyValueChanged += (s, e) => DictEntry.RefreshDisplayTexts(_entries);
+            ValuePropertyGrid.PropertyValueChanged += (s, e) => DictEntry.RefreshDisplayTexts(_entries);
         }
 
         private static void OnItemsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)

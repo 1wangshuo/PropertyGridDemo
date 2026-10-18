@@ -217,6 +217,8 @@
                             </Grid>
                             <TextBlock Text="{Binding SdkSwitchFormula, StringFormat=当前公式: {0}}"
                                        FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                            <TextBlock FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                       Text="默认态：上面的 FormulaString 已有内容（&amp;{Sensors,Temperature,Value}），控件打开即处于「公式绑定」状态（进去了），而不是停在普通输入框上；点 ✕ 或再次点击 🔗 可切回普通输入，之后不会再被自动拉回。若公式为空则默认就是普通输入。"/>
                         </StackPanel>
                     </Border>
 
