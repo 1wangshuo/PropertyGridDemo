@@ -94,9 +94,24 @@ namespace PropertyGridLib.Controls
 
         private static void OnEventsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
+            var picker = (EventPicker)d;
+            // 数据源变更后旧的选中事件已不在列表里，清掉底部描述栏
+            picker.SelectedEvent = null;
             // 数据源变更立即刷新（无防抖：只在换选中控件时发生一次）
-            ((EventPicker)d).ApplyFilter();
+            picker.ApplyFilter();
         }
+
+        /// <summary>当前选中的事件行（点击事件行时更新）；底部描述栏显示它的名称与说明。
+        /// 与属性页 SelectedPropertyItem → 描述栏 同款语义。</summary>
+        public EventItem SelectedEvent
+        {
+            get => (EventItem)GetValue(SelectedEventProperty);
+            set => SetValue(SelectedEventProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedEventProperty =
+            DependencyProperty.Register(nameof(SelectedEvent), typeof(EventItem), typeof(EventPicker),
+                new PropertyMetadata(null));
 
         /// <summary>目标对象：设置后自动反射其公共事件填充 <see cref="Events"/></summary>
         public object SelectedObject
@@ -161,16 +176,47 @@ namespace PropertyGridLib.Controls
                 .OrderBy(g => PropertyItemFactory.IsMiscCategory(g.Key) ? 1 : 0)  // 杂项/其他 分类排最后
                 .ThenBy(g => g.Key, NaturalStringComparer.Instance))
             {
-                EventCategories.Add(new EventCategory(g.Key,
-                    g.OrderBy(e => e.DisplayName, NaturalStringComparer.Instance).ToList()));
+                var category = new EventCategory(g.Key,
+                    g.OrderBy(e => e.DisplayName, NaturalStringComparer.Instance).ToList());
+
+                // 搜索/换数据源都会重建分类对象，这里按名字回灌上次的折叠状态，
+                // 否则用户每敲一个搜索字符，折叠过的分类都会被重新弹开。
+                if (_collapsedCategories.Contains(category.Name))
+                    category.IsExpanded = false;
+
+                category.PropertyChanged += OnEventCategoryPropertyChanged;
+                EventCategories.Add(category);
             }
 
-            // 压平成单层行（分类头 + 事件行）—— 虚拟化的前提：所有行在同一个面板里、行高一致，
-            // 嵌套结构（Expander 内套 ItemsControl）会被赋予无限高度，虚拟化等于没开。
-            var rows = new List<object>(EventCategories.Count + list.Count);
+            RebuildRowsFromCategories();
+        }
+
+        /// <summary>用户折叠过的分类名（分类对象每次重建都会换新，折叠状态按名字跨重建保留）</summary>
+        private readonly HashSet<string> _collapsedCategories = new HashSet<string>(StringComparer.Ordinal);
+
+        private void OnEventCategoryPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(EventCategory.IsExpanded)) return;
+            if (!(sender is EventCategory category)) return;
+
+            if (category.IsExpanded) _collapsedCategories.Remove(category.Name);
+            else _collapsedCategories.Add(category.Name);
+
+            // 与属性页 OnCategoryPropertyChanged 对称：折叠/展开后重建一次平铺行，
+            // 而不是靠行模板里的嵌套 Expander（嵌套会被赋予无限高度，虚拟化失效）。
+            RebuildRowsFromCategories();
+        }
+
+        /// <summary>按各分类的展开状态压平成单层行（折叠的分类只保留分类头）。
+        /// 压平是虚拟化的前提：所有行在同一个面板里、行高一致，
+        /// 嵌套结构（Expander 内套 ItemsControl）会被赋予无限高度，虚拟化等于没开。</summary>
+        private void RebuildRowsFromCategories()
+        {
+            var rows = new List<object>(EventCategories.Count + FilteredEvents.Count);
             foreach (var c in EventCategories)
             {
                 rows.Add(c);
+                if (!c.IsExpanded) continue;
                 rows.AddRange(c.Items);
             }
             RebuildRows(rows);
@@ -218,6 +264,15 @@ namespace PropertyGridLib.Controls
         /// 无订阅者时执行默认行为：为未绑定的事件填入建议方法名。</summary>
         public event EventHandler<EventItemEventArgs> EditRequested;
 
+        /// <summary>单击事件行 → 记录为选中事件，供底部描述栏显示（不置 Handled：
+        /// 不影响点 ⚡ 按钮、也不影响行内输入框正常取焦点）。</summary>
+        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            base.OnPreviewMouseLeftButtonDown(e);
+            var item = FindEventItem(e.OriginalSource as DependencyObject);
+            if (item != null) SelectedEvent = item;
+        }
+
         /// <summary>双击事件行触发编辑请求</summary>
         protected override void OnMouseDoubleClick(MouseButtonEventArgs e)
         {
@@ -262,8 +317,10 @@ namespace PropertyGridLib.Controls
         }
     }
 
-    /// <summary>事件分类分组（EventPicker 平铺行的分类头）</summary>
-    public class EventCategory
+    /// <summary>事件分类分组（EventPicker 平铺行的分类头）。
+    /// 与属性页的 PropertyCategory 同构：带 IsExpanded 并可通知，
+    /// 供分类头折叠/展开（折叠的分类只保留分类头一行）。</summary>
+    public class EventCategory : INotifyPropertyChanged
     {
         /// <summary>分类名</summary>
         public string Name { get; }
@@ -275,6 +332,22 @@ namespace PropertyGridLib.Controls
         {
             Name = name;
             Items = items ?? new List<EventItem>();
+            _isExpanded = true;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private bool _isExpanded;
+        /// <summary>是否展开（默认展开，与属性页分类头一致；折叠后该类事件行不进入平铺列表）</summary>
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (_isExpanded == value) return;
+                _isExpanded = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
+            }
         }
     }
 

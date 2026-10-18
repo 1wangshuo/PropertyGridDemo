@@ -28,6 +28,8 @@
                                Foreground="{DynamicResource SecondaryTextBrush}"
                                TextWrapping="Wrap">
                         右侧 EventPicker 自动反射选中对象（Button）的全部公共事件。
+                        分类头可点击折叠/展开（与属性页分类头同款，折叠状态在搜索时也保留）；
+                        单击带说明的事件行时，控件底部出现描述栏（与属性页描述栏同款）。
                         双击事件行或点 ⚡ 触发 EditRequested（宿主可接代码编辑器）。
                     </TextBlock>
                 </StackPanel>
@@ -42,6 +44,8 @@
                     PropertyGrid 与事件编辑器（EventPicker）已拆分为两个独立控件。
                     属性页签刷新不再触发事件反射构建，快速切换对象不卡顿。
                     事件数据仅在事件页签激活时构建（EventPicker.SelectedObject 反射 / 宿主注入 Events）。
+                    EventPicker 与属性页对齐：分类头可折叠（折叠状态跨搜索重建保留）、
+                    选中带说明的事件行时底部显示描述栏；行列表仍是「压平 + 虚拟化」，不退回嵌套 Expander。
                 </TextBlock>
             </Border>
         </DockPanel>

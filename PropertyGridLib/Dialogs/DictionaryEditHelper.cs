@@ -31,6 +31,25 @@ namespace PropertyGridLib.Dialogs
 
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged(string n) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(n));
+
+        /// <summary>
+        /// 复杂键/值被内嵌属性页就地改过后，按当前对象重算显示文本并通知行更新。
+        /// Key/Value 的 setter 只在「引用被替换」时才发通知；就地修改同一个对象不走 setter，
+        /// 列表行便一直停在旧文本，必须由值变更事件显式触发这里。
+        /// </summary>
+        public void RaiseDisplayChanged()
+        {
+            OnPropertyChanged(nameof(KeyDisplay));
+            OnPropertyChanged(nameof(ValueDisplay));
+        }
+
+        /// <summary>按当前对象重算所有条目的显示文本（供字典编辑器在内嵌属性页值变更后调用）</summary>
+        public static void RefreshDisplayTexts(IEnumerable entries)
+        {
+            if (entries == null) return;
+            foreach (var entry in entries)
+                (entry as DictEntry)?.RaiseDisplayChanged();
+        }
     }
 
     /// <summary>

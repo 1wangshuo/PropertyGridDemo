@@ -2,3 +2,11 @@ bin/
 obj/
 .vs/
 *.user
+
+## 自包含发布输出
+publish/
+
+## WPF 临时编译工程 / 构建日志
+*_wpftmp.csproj
+*_wpftmp.*
+*.binlog

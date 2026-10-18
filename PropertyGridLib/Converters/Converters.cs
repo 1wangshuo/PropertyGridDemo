@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -424,6 +425,27 @@ namespace PropertyGridLib.Converters
     /// </summary>
     public class ColorToBrushConverter : IValueConverter
     {
+        /// <summary>
+        /// 颜色 → 冻结画刷的全局缓存。
+        /// 原来每次 Convert 都 <c>new SolidColorBrush(color)</c> 再 Freeze：颜色块/可展开行的值一变就换新实例，
+        /// 旧实例在紧随的布局里被 WPF 从组合通道上释放，实测**连点「重置所有属性」第二次必崩**
+        /// （SolidColorBrush.ReleaseOnChannelCore → COMException 0x8000FFFF → Visual.DisconnectAttachedResource
+        /// → UIElement.RenderClose → Arrange → ContextLayoutManager.UpdateLayout）。
+        /// 冻结后的 Freezable 不可变、可被多处共享，按颜色缓存同一实例即可消除「每次求值新建/释放」这一循环，
+        /// 同时保住了「颜色相同 → 绑定值不变 → 连通知都不产生」的短路效果。
+        /// </summary>
+        private static readonly ConcurrentDictionary<Color, SolidColorBrush> FrozenBrushCache
+            = new ConcurrentDictionary<Color, SolidColorBrush>();
+
+        /// <summary>取某个颜色的共享冻结画刷（Color 是 struct，作键无装箱歧义）</summary>
+        internal static SolidColorBrush GetFrozenBrush(Color color)
+            => FrozenBrushCache.GetOrAdd(color, c =>
+            {
+                var brush = new SolidColorBrush(c);
+                brush.Freeze();
+                return brush;
+            });
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value == null) return null;
@@ -431,13 +453,9 @@ namespace PropertyGridLib.Converters
             // 已经是 SolidColorBrush，直接返回
             if (value is SolidColorBrush scb) return scb;
 
-            // Color struct → SolidColorBrush（Freeze 防止绑定循环）
+            // Color struct → 共享的冻结 SolidColorBrush
             if (value is Color color)
-            {
-                var brush = new SolidColorBrush(color);
-                brush.Freeze();
-                return brush;
-            }
+                return GetFrozenBrush(color);
 
             // Color?（装箱后也是 Color，上面已覆盖）
             // Brush 其他子类 → 取 Color

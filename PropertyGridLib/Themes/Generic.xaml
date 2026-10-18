@@ -19,6 +19,8 @@
     <conv:DateTimeConverter x:Key="DateTimeConv"/>
     <conv:ObjectToTypeConverter x:Key="ObjToType"/>
     <conv:FontSizeOffsetConverter x:Key="FontSizeOffset"/>
+    <!-- Color → 冻结画刷 转换器。颜色编辑器的色块预览已改绑 ColorEditControl 自己的 SwatchBrush
+         （见下面的 ColorEditControl 模板），该资源键保留给宿主在自定义行模板里继续使用。 -->
     <conv:ColorToBrushConverter x:Key="ColorToBrush"/>
 
     <!-- Popup 阴影效果 -->
@@ -674,14 +676,16 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <!-- 颜色预览块 -->
+                                <!-- 颜色预览块：Background 绑到控件自己独占的画刷实例（SwatchBrush），
+                                     值变化只就地改 Color、不换实例 —— 避免每次刷新都产生新画刷、
+                                     旧画刷在紧随的布局里被组合通道释放（0x8000FFFF 崩溃来源）。 -->
                                 <Border Grid.Column="0"
                                         Width="14" Height="14"
                                         Margin="6,0,6,0"
                                         VerticalAlignment="Center"
                                         BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="0.5"
-                                        Background="{Binding Value, Converter={StaticResource ColorToBrush}}"/>
+                                        Background="{Binding SwatchBrush, RelativeSource={RelativeSource TemplatedParent}}"/>
                                 <!-- 十六进制文本 -->
                                 <TextBlock Grid.Column="1"
                                            Text="{Binding ValueString}"
@@ -839,7 +843,8 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 左侧：标题 + 修改红点（与 R 按钮逻辑一致） -->
+            <!-- 左侧：标题（不再带修改红点 —— 右侧 R 按钮已经是同一个「已修改」标识，
+                 两处同时出现是冗余，按宿主反馈只保留 R） -->
             <StackPanel Grid.Column="0" Orientation="Horizontal"
                         Margin="8,0,12,0" VerticalAlignment="Center">
                 <TextBlock Text="{Binding DisplayName}"
@@ -847,11 +852,6 @@
                            FontWeight="{Binding TitleFontWeight, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}}"
                            VerticalAlignment="Center"
                            TextTrimming="CharacterEllipsis"/>
-                <!-- 红点：值已被修改（未保存/可复位） -->
-                <Ellipse Width="6" Height="6" Margin="4,0,0,0"
-                         VerticalAlignment="Center"
-                         Fill="{DynamicResource DangerBrush}"
-                         Visibility="{Binding IsModified, Converter={StaticResource BoolToVis}}"/>
             </StackPanel>
 
             <!-- 右侧：值编辑器 + 绑定按钮 + 复位按钮（34 行内居中） -->
@@ -1045,17 +1045,29 @@
         </Expander>
     </DataTemplate>
 
-    <!-- EventPicker 平铺列表的分类头：纯标签行（不折叠——事件分类数少，平铺+虚拟化收益最大） -->
+    <!-- EventPicker 平铺列表的分类头：可折叠（与属性页分类头同款手法 ——
+         分类头本身只是平铺列表中的一行 Expander，折叠状态经 TwoWay 绑定回 EventCategory.IsExpanded，
+         由 EventPicker 重建一次平铺行；行内不嵌套任何内容，所以虚拟化不受影响）。 -->
     <DataTemplate x:Key="EventFlatCategoryHeaderTemplate">
-        <StackPanel x:Name="HeaderPanel" Margin="2,8,2,2">
-            <TextBlock Text="{Binding Name}"
-                       FontWeight="Bold"
-                       FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=local:EventPicker}}"
-                       Foreground="{DynamicResource PrimaryBrush}"/>
-        </StackPanel>
+        <Expander x:Name="HeaderExpander"
+                  IsExpanded="{Binding IsExpanded, Mode=TwoWay}"
+                  Header="{Binding Name}"
+                  FontWeight="Bold"
+                  Foreground="{DynamicResource PrimaryBrush}"
+                  Background="{DynamicResource RegionBrush}"
+                  Margin="2,8,2,2">
+            <Expander.HeaderTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}"
+                               FontWeight="Bold"
+                               FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=local:EventPicker}}"
+                               Foreground="{DynamicResource PrimaryBrush}"/>
+                </DataTemplate>
+            </Expander.HeaderTemplate>
+        </Expander>
         <DataTemplate.Triggers>
             <DataTrigger Binding="{Binding Name}" Value="">
-                <Setter TargetName="HeaderPanel" Property="Visibility" Value="Collapsed"/>
+                <Setter TargetName="HeaderExpander" Property="Visibility" Value="Collapsed"/>
             </DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
@@ -1077,6 +1089,8 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
+                            <!-- 底部描述栏（选中事件带说明时才有内容，否则整条不占位） -->
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <hc:SearchBar Grid.Row="0"
@@ -1109,6 +1123,27 @@
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                         </ItemsControl>
+
+                        <!-- 底部描述栏：与属性页描述栏同款排布（标题 + 说明文字）。
+                             只在「选中的事件确有说明」时出现 —— 事件无 [Description] 时不占任何高度，
+                             不像属性页那样即使没有说明也留一条空栏。 -->
+                        <Border Grid.Row="2"
+                                Background="{DynamicResource SecondaryRegionBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="0,1,0,0"
+                                Padding="8,6"
+                                Visibility="{Binding SelectedEvent.HasDescription, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding SelectedEvent.DisplayName, RelativeSource={RelativeSource TemplatedParent}}"
+                                           FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <TextBlock Text="{Binding SelectedEvent.Description, RelativeSource={RelativeSource TemplatedParent}}"
+                                           FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-1}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"
+                                           Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -1226,6 +1261,7 @@
                                                           Header="{Binding Name}"
                                                           FontWeight="{Binding CategoryFontWeight, RelativeSource={RelativeSource TemplatedParent}}"
                                                           Foreground="{DynamicResource PrimaryBrush}"
+                                                          Background="{DynamicResource RegionBrush}"
                                                           Margin="0,4,0,0">
                                                     <Expander.HeaderTemplate>
                                                         <DataTemplate>
@@ -1317,18 +1353,22 @@
                 <StackPanel>
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <!-- 名称/描述列（*）吃剩余空间、把编辑器列顶到卡片右缘；内容宽度上限由
-                                 内层 StackPanel 的 MaxWidth 控制。编辑器列必须保持 Auto（=固定
-                                 EditorWidth+按钮宽）：此前 *+* 对半分把编辑器列压到 290，固定 300 宽的
-                                 编辑器右对齐后向左溢出被裁 —— DatePicker 只剩 "-03-15 00:00:00"、
-                                 可展开行的箭头 ▶ 恰在编辑器最左端被裁"消失"。标题列再挤也只压缩
-                                 自己（单行省略），绝不挤压编辑器列。 -->
+                            <!-- 左右两栏：标题列（*）+ 编辑器列（Auto，固定 EditorWidth+按钮宽，贴卡片右缘）。
+                                 窗口拉宽时新增空间全部落在两栏之间——标签始终贴卡片左缘、编辑器始终在右。
+                                 标题内容显式 HorizontalAlignment=Left + MaxWidth=300：只占自身宽度、
+                                 绝不因 Stretch+MaxWidth 的排列差异在标题左侧留出大空隙。
+                                 编辑器列必须保持 Auto：此前 *+* 对半分在宽窗口会把编辑器横向拉大、
+                                 窄窗口又压到 290（固定 300 宽右对齐后向左溢出被裁——
+                                 DatePicker 只剩 "-03-15 00:00:00"、可展开行箭头 ▶ 被裁）。 -->
                             <ColumnDefinition Width="*" MinWidth="80"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <!-- 左：属性名（上）+ 说明（下），均单行省略（老版同款紧凑行），完整内容看 ToolTip -->
-                        <StackPanel Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Center" MaxWidth="300">
+                        <!-- 左：属性名（上）+ 说明（下），均单行省略（老版同款紧凑行），完整内容看 ToolTip。
+                             HorizontalAlignment=Left：宽窗口下标题与卡片左缘之间只留卡片自身 Padding，
+                             不允许标题被"放"到行中部。 -->
+                        <StackPanel Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Center"
+                                    HorizontalAlignment="Left" MaxWidth="300">
                             <TextBlock Text="{Binding DisplayName}"
                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                        FontWeight="SemiBold"
@@ -1382,7 +1422,12 @@
                                 Background="{DynamicResource SecondaryRegionBrush}"
                                 Panel.ZIndex="10"
                                 Visibility="{Binding IsFormulaEditorOpen, Converter={StaticResource BoolToVis}}">
-                            <Grid>
+                            <!-- VerticalAlignment=Center + Height=30：卡片高度由左侧「标题+说明」决定
+                                 （说明可能折成多行、卡片比编辑器高得多），条带不居中就会被纵向拉满整张卡片，
+                                 公式输入框变成一块又高又空的圆角白块（实测观感很差）。固定 30 = 其他行编辑器
+                                 的统一高度，条带居中后输入框与普通编辑器等高；覆盖层背景仍铺满整格，
+                                 上下露出的底色=卡片底色，原值编辑器依旧被盖住。 -->
+                            <Grid VerticalAlignment="Center" Height="30">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>

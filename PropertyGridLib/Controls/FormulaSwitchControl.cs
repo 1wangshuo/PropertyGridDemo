@@ -63,7 +63,27 @@ namespace PropertyGridLib.Controls
 
         public static readonly DependencyProperty FormulaStringProperty =
             DependencyProperty.Register(nameof(FormulaString), typeof(string), typeof(FormulaSwitchControl),
-                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
+                new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,
+                    OnFormulaStringChanged));
+
+        /// <summary>
+        /// 公式一开始就有内容（宿主已绑定）时，默认切到公式模式 —— 打开即是「已经绑定」的状态，
+        /// 而不是停在普通输入框上。只在首次由「无内容 → 有内容」补默认值：
+        /// 之后完全交回宿主/用户（用户手动切回普通输入后不会被反复拉回公式模式）。
+        /// </summary>
+        private static void OnFormulaStringChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is FormulaSwitchControl control) control.ApplyAutoFormulaMode();
+        }
+
+        private bool _autoFormulaModeApplied;
+
+        private void ApplyAutoFormulaMode()
+        {
+            if (_autoFormulaModeApplied || string.IsNullOrEmpty(FormulaString)) return;
+            _autoFormulaModeApplied = true;
+            IsFormulaMode = true;
+        }
 
         /// <summary>公式字符串（双向；如 "&amp;{Global,SysTime,Value}"）</summary>
         public string FormulaString

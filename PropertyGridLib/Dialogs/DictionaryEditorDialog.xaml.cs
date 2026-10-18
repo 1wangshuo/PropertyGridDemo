@@ -68,6 +68,11 @@ namespace PropertyGridLib.Dialogs
                 EntriesListBox.SelectedIndex = 0;
             else
                 LoadCurrentEntry(); // 空字典时禁用键值编辑框
+
+            // 复杂键/值由内嵌属性页就地修改（对象引用不变）时，DictEntry.Key/Value 的 setter 不会触发，
+            // 列表行显示文本会一直停在旧内容 —— 订阅两张属性页的值变更，改完即重算行显示（只刷显示层）。
+            KeyPropertyGrid.PropertyValueChanged += (s, e) => DictEntry.RefreshDisplayTexts(_entries);
+            ValuePropertyGrid.PropertyValueChanged += (s, e) => DictEntry.RefreshDisplayTexts(_entries);
         }
 
         /// <summary>只读查看模式：隐藏增删/确定，键值输入框只读；

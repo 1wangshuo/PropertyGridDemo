@@ -71,6 +71,9 @@ namespace PropertyGridLib.Controls
         /// <summary>描述（提示）</summary>
         public string Description { get; }
 
+        /// <summary>是否带描述。底部描述栏只在「确有详细介绍」时出现（占位不占屏）。</summary>
+        public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
+
         /// <summary>显示名（[DisplayName] 特性优先，否则与 Name 相同）</summary>
         public string DisplayName => _displayName ?? Name;
 

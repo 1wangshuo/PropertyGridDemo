@@ -2,15 +2,23 @@
 
 WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl UI 库。
 
-> **版本 1.5.0** | .NET Framework 4.8+ / .NET 6/7/8-windows | HandyControl 3.5.1 | **作者：WangShuo**
+> **版本 1.6.0** | .NET Framework 4.8+ / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
 
 ### 📦 相关仓库
 
 | 仓库 | 地址 |
 |------|------|
-| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.5.0` |
+| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.6.0` |
 | **Demo 项目** | https://github.com/1wangshuo/PropertyGridDemo |
-| **技能文档** | [skill/SKILL.md](../PropertyGridDemo/skill/SKILL.md)（多页使用文档：基础用法 / 特性清单 / 编辑器类型 / 主题多语言 / 公式绑定 / PropertyGridPro / 示例模型 / FAQ） |
+| **技能文档** | [skill/SKILL.md](https://github.com/1wangshuo/PropertyGridDemo/blob/main/skill/SKILL.md)（多页使用文档：基础用法 / 特性清单 / 编辑器类型 / 主题多语言 / 公式绑定 / PropertyGridPro / 示例模型 / FAQ） |
+
+---
+
+## ✨ v1.6.0 新特性
+
+- ✅ **🐛 「重置所有属性」闪退修复** — 颜色编辑器行内色块改用控件独占画刷（不再每次新建 / 释放画刷），修掉连点重置时布局阶段 `SolidColorBrush.ReleaseOnChannelCore` 抛 `0x8000FFFF (E_UNEXPECTED)` 导致进程退出的崩溃。三场景压测（虚拟化开 60 轮 / 虚拟化关 30 轮 / Pro 平铺面板 30 轮）全部通过。
+- ✅ **🐛 复杂对象值区不再显示完整 CLR 类型名** — 可展开对象行（嵌套配置类）右侧此前显示默认 `ToString()` 的全名（含命名空间，如 `Ext.FlowWork.Settings.AutoBackupOptions`），又长又不可读。现按以下优先级显示：① 类型重写了 `ToString()` 的自定义输出保持不变；② 类型上声明 `[DisplayName("业务名")]` 时显示业务名；③ 回退友好类型名——去命名空间、展开泛型参数（`AutoBackupOptions`、`List<string>`）。枚举成员名、集合计数、颜色色值等原有显示均不受影响。
+- ✅ **🎯 正式支持 .NET 10** — 多目标新增 `net10.0-windows` 并随 NuGet 包分发。
 
 ---
 
@@ -20,7 +28,7 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 
   | 普通输入模式 | 公式绑定模式 |
   |---|---|
-  | ![普通模式](../PropertyGridDemo/skill/images/formula-switch-normal.png) | ![公式模式](../PropertyGridDemo/skill/images/formula-switch-formula.png) |
+  | ![普通模式](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/formula-switch-normal.png) | ![公式模式](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/formula-switch-formula.png) |
 
 ---
 
@@ -38,31 +46,31 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 
 - ✅ **🧩 PropertyGridPro 平铺参数面板（新控件）** — 纵向平铺、卡片式属性行，面向「参数面板 / 属性面板」场景：`Header` / `HeaderDescription` / `SourceText` 头部区、`EditorWidth` 统一编辑器宽度、`RowTemplate` 可整体替换行模板；属性搜索附匹配计数与空结果提示；与 `PropertyGrid` 共用同一套特性、编辑器模板、本地化与主题资源，模型无需改动即可互换
 
-  ![PropertyGridPro 平铺面板（浅色）](../PropertyGridDemo/skill/images/pro-overview-light.png)
+  ![PropertyGridPro 平铺面板（浅色）](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-overview-light.png)
 
 - ✅ **🃏 卡片式属性行布局** — 属性行改为卡片承载（圆角 7、行间距、分类头独立成卡片），底色取主题次级区域画刷（`SecondaryRegionBrush`），深浅主题下层次一致
 
-  ![卡片式行布局](../PropertyGridDemo/skill/images/pro-card-layout-detail.png)
+  ![卡片式行布局](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-card-layout-detail.png)
 
 - ✅ **🌓 主题色跟随（去除硬编码）** — 面板模板中硬编码的深色全部替换为 `SkinDark` / `ThemeHelper` 等主题资源键，卡片背景、边框、标题与描述文字、分类头、嵌套引导线均随主题切换
 
-  ![主题跟随对比](../PropertyGridDemo/skill/images/pro-theme-follow-window.png)
+  ![主题跟随对比](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-theme-follow-window.png)
 
 - ✅ **🪜 无限嵌套样式统一** — 复杂对象子属性以卡片逐层铺开并按层级缩进 + 引导线，层级不限；统一了各层级的间距、圆角与引导线样式
 
-  ![多级嵌套](../PropertyGridDemo/skill/images/pro-nested-4level-light.png)
+  ![多级嵌套](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-nested-4level-light.png)
 
 - ✅ **🔗 公式绑定接入 Pro 面板** — `[FormulaEditor]` 属性在 `PropertyGridPro` 中同样显示公式绑定区（值编辑器 + 链接图标 + 公式文本框 + 树选择器 Popup），并支持全局 `FormulaTreeProvider`
 
-  ![公式绑定行](../PropertyGridDemo/skill/images/formula-binding-row-dark.png)
+  ![公式绑定行](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/formula-binding-row-dark.png)
 
 - ✅ **📐 复位按钮常驻占位（消除布局抖动）** — 复位按钮可见性由 `Collapsed` 改为 `Hidden`（新增 `BoolToHiddenVisibilityConverter`），未悬停时仍保留占位，实测同行的值编辑器位移 **0px**，不再左右跳动
 
-  ![复位按钮占位](../PropertyGridDemo/skill/images/reset-button-base-light.png)
+  ![复位按钮占位](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/reset-button-base-light.png)
 
 - ✅ **🔀 [ToggleSwitch] 布尔开关特性（新特性）** — `bool` 专用编辑器：滑块式开关（圆角轨道 + 圆形滑块，HandyControl `ToggleButtonSwitch` 样式）＋可选的开/关状态文字（`[ToggleSwitch("已启用","已禁用")]` / `OnText` / `OffText`，传 `null` 可隐藏文字）；基类与 Pro 面板通过同一 `EditorSelector` 复用生效，未标注的 `bool` 属性保持默认开关外观（无状态文字）
 
-  ![ToggleSwitch 布尔开关](../PropertyGridDemo/skill/images/toggle-switch-area-light.png)
+  ![ToggleSwitch 布尔开关](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/toggle-switch-area-light.png)
 
 - ✅ **🧹 演示程序清理** — 移除演示旧模型（右侧「实时值」区块与旧对象演示），Pro 演示窗口统一改用与基类一致的 `SampleObject`
 
@@ -115,7 +123,7 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 
 - [安装](#安装)
 - [快速开始](#快速开始)
-- [📚 技能文档（skill/）](../PropertyGridDemo/skill/SKILL.md)
+- [📚 技能文档（skill/）](https://github.com/1wangshuo/PropertyGridDemo/blob/main/skill/SKILL.md)
 - [命名空间](#命名空间)
 - [标准 .NET 特性](#标准-net-特性)
 - [自定义特性](#自定义特性)
@@ -150,19 +158,19 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 ### NuGet 包管理器
 
 ```powershell
-Install-Package PropertyGridLib -Version 1.5.0
+Install-Package PropertyGridLib -Version 1.6.0
 ```
 
 ### .NET CLI
 
 ```bash
-dotnet add package PropertyGridLib --version 1.5.0
+dotnet add package PropertyGridLib --version 1.6.0
 ```
 
 ### PackageReference (PackageReference)
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.5.0" />
+<PackageReference Include="PropertyGridLib" Version="1.6.0" />
 ```
 
 安装后，NuGet 会自动拉取依赖项 `HandyControl 3.5.1`。
@@ -506,11 +514,11 @@ public bool IsEnabled { get; set; }
 
 | 未标注（默认 bool） | `[ToggleSwitch]` | `[ToggleSwitch("已启用","已禁用")]` |
 |---|---|---|
-| ![默认 bool](../PropertyGridDemo/skill/images/toggle-switch-row-plain-bool.png) | ![默认文字](../PropertyGridDemo/skill/images/toggle-switch-row-default.png) | ![自定义文字](../PropertyGridDemo/skill/images/toggle-switch-row-custom-text.png) |
+| ![默认 bool](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/toggle-switch-row-plain-bool.png) | ![默认文字](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/toggle-switch-row-default.png) | ![自定义文字](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/toggle-switch-row-custom-text.png) |
 
 | 开关区域（浅色） | 开关区域（深色） |
 |---|---|
-| ![浅色](../PropertyGridDemo/skill/images/toggle-switch-area-light.png) | ![深色](../PropertyGridDemo/skill/images/toggle-switch-area-dark.png) |
+| ![浅色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/toggle-switch-area-light.png) | ![深色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/toggle-switch-area-dark.png) |
 
 ---
 
@@ -787,7 +795,7 @@ new FormulaTreeNode
 
 | PropertyGridPro（浅色） | PropertyGridPro（深色） |
 |---|---|
-| ![Pro 浅色](../PropertyGridDemo/skill/images/pro-overview-light.png) | ![Pro 深色](../PropertyGridDemo/skill/images/pro-overview-dark.png) |
+| ![Pro 浅色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-overview-light.png) | ![Pro 深色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-overview-dark.png) |
 
 ### 用法
 
@@ -829,15 +837,15 @@ PropertyGridPro1.SelectedObject = new SampleObject();
 
 | 卡片式行细节 | 多级嵌套（浅色） | 多级嵌套（深色） |
 |---|---|---|
-| ![卡片细节](../PropertyGridDemo/skill/images/pro-card-layout-detail.png) | ![嵌套浅色](../PropertyGridDemo/skill/images/pro-nested-4level-light.png) | ![嵌套深色](../PropertyGridDemo/skill/images/pro-nested-dark.png) |
+| ![卡片细节](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-card-layout-detail.png) | ![嵌套浅色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-nested-4level-light.png) | ![嵌套深色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-nested-dark.png) |
 
 ### 搜索
 
 | 命中（浅色） | 无匹配（浅色） | 命中（深色） | 无匹配（深色） |
 |---|---|---|---|
-| ![命中](../PropertyGridDemo/skill/images/pro-search-light.png) | ![空结果](../PropertyGridDemo/skill/images/pro-search-empty-light.png) | ![命中深色](../PropertyGridDemo/skill/images/pro-search-dark.png) | ![空结果深色](../PropertyGridDemo/skill/images/pro-search-empty-dark.png) |
+| ![命中](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-search-light.png) | ![空结果](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-search-empty-light.png) | ![命中深色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-search-dark.png) | ![空结果深色](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/pro-search-empty-dark.png) |
 
-> 完整用法（含公式绑定、布尔开关在 Pro 中的表现、主题与多语言）见 [skill/06-PropertyGridPro-平铺参数面板.md](../PropertyGridDemo/skill/06-PropertyGridPro-平铺参数面板.md)。
+> 完整用法（含公式绑定、布尔开关在 Pro 中的表现、主题与多语言）见 [skill/06-PropertyGridPro-平铺参数面板.md](https://github.com/1wangshuo/PropertyGridDemo/blob/main/skill/06-PropertyGridPro-%E5%B9%B3%E9%93%BA%E5%8F%82%E6%95%B0%E9%9D%A2%E6%9D%BF.md)。
 
 ---
 
@@ -1386,6 +1394,58 @@ PropertyGrid 在内部监听 `LocalizationManager.LanguageChanged` 事件，语�
 ---
 
 ## 更新日志
+
+### v1.6.0（2026-10-15）
+
+#### 🐛 缺陷修复
+
+- **可展开复杂对象值区显示完整 CLR 类型名**：嵌套配置类（如 `Ext.FlowWork.Settings.AutoBackupOptions`）未重写 `ToString()` 时，对象行右侧只读值区直接显示默认的 `命名空间.类名` 全名，过长且对业务用户无意义。`PropertyItem.ValueString` 末尾回退改为：重写了 `ToString()` 的输出原样保留 → 类型级 `[DisplayName]` 业务名 → 友好类型名（复用 `GetFriendlyTypeName`：去命名空间、展开泛型参数、可空加 `?`）。枚举成员名（`System.Enum.ToString`）与未重写 ToString 的结构体（`ValueType.ToString`）均正确分流，集合计数/颜色色值等特判不受影响。
+
+- **PropertyGridPro 平铺行宽窗口布局修正**：恢复「标题列（左）+ 编辑器列（右、固定 EditorWidth 贴卡片右缘）」两栏结构——窗口拉宽时新增空间落在两栏之间；标题 StackPanel 显式 `HorizontalAlignment=Left`，宽窗口下标题与卡片左缘之间只留卡片自身 Padding，不再在标题左侧留出大片空隙。
+
+- **多层嵌套对象第二层及更深层无法展开（关键修复）**：网格（`PropertyGrid` 与 `PropertyGridPro`）刷新时只对**顶层**属性项挂钩 `PropertyChanged`，而展开后惰性生成的子属性项（`PropertyItem.LoadChildProperties` 创建）从未被订阅。子项自身 `IsExpanded` 变化无人接收，扁平行集合（`BuildFlatRows`）不会重建 —— 现象为「第一层可展开，第二层及更深层点箭头无任何反应」。修复：`PropertyItem.OnPropertyChanged` 在 `IsExpanded` 变更时**逐级冒泡到父项**（顶层项 `Parent == null`，链条自然终止），由网格收到顶层项通知后统一重建一次行集合。任意嵌套深度（受 `maxDepth` 限制，默认 5）均可逐层展开；经典网格与平铺面板共用同一冒泡路径，一次修复同时生效。
+
+- **double/float 数值显示长尾数（浮点噪声）**：`ValueString` 原先对数值走默认 `ToString()`——给的是「最短往返表示」，会把二进制舍入噪声原样吐出：滑块按 0.1 步进到 1.2 时 double 实为 `1.2000000000000002`，数值框与滑块标签便显示成一长串小数（框宽不足还会被裁成 `1.200000000000`）；`0.1+0.2` 则显示 `0.30000000000000004`。修复：`ValueString` 对 `double` 用 **G15**、`float` 用 **G7** 有效数字格式输出（`0.1+0.2 → 0.3`、`12*0.1 → 1.2`，G 格式自带去尾零），结果落到科学计数法（如 `1.5E-05`）时再改用定点格式，避免面板出现 E 记数写法。**只改显示文本，底层存储与序列化仍是原始双精度值**（实测属性值保持 `1.2000000000000002` 不变）。`decimal` 无二进制噪声，维持原样输出。
+
+  > 一并说明：HC `NumericUpDown` 的 `ValueFormat` 属性在本框架依赖的 HandyControl 3.5.1 中实测被忽略、`DecimalPlaces` 只能固定小数位，均无法根治；统一在 `ValueString` 层格式化后，**只读值区、滑块数值框、普通数值框、数值标签四条显示路径同时生效**。
+
+- **公式绑定「打开即已绑定状态」**：公式已有内容时，绑定区默认直接进入已绑定态，不再停在普通输入/原始值上等用户手动点开。
+  - `FormulaSwitchControl`：`FormulaString` 非空时默认 `IsFormulaMode = true`（打开即公式模式）；公式为空则保持普通输入。只在首次「无内容 → 有内容」补默认值，用户手动切回普通输入后不会被反复拉回。
+  - `PropertyItem`（网格属性行）：`[FormulaEditor]` / `FormulaBound<T>` 属性若已带公式，`IsFormulaEditorOpen` 默认 `true`，公式条默认展开显示在行内（不再需要点绑定按钮）；空公式保持默认收起。
+  两处都只在「公式确有内容」时改变默认态，原有手动切换行为不变。
+
+- **PropertyGridPro 公式条被卡片撑高**：Pro 卡片行高度由左侧「属性名 + 说明」决定（说明折成多行时卡片明显比编辑器高），而公式覆盖条原先没有纵向约束，会被拉满整张卡片，公式输入框随之变成一块又高又空的圆角白块。修复：条带加 `VerticalAlignment=Center` + 固定高度 `30`（与其他行编辑器统一高度，实测 30.4px）。覆盖层背景仍铺满整格、原值编辑器依旧被盖住，只是条带本身回到正常编辑器高度。Classic 两套行模板行高固定为 34，本就不受影响，未改动。
+
+- **编辑器列表显示名不随属性更新（集合/字典编辑器刷新缺陷）**：集合编辑器弹窗与字典编辑器的左侧列表，行文本是**加载时按 `ToString()` 算好的一次性快照**（`ListBoxItemData.DisplayText` / `DictEntry.KeyDisplay·ValueDisplay`）。在右侧内嵌属性页里改了条目属性（改名称、换选项），改的是**同一个条目对象**（引用不变），列表行没有任何刷新路径 —— 于是显示名一直停在旧值。
+  - 修复：`ListBoxItemData` 实现 `INotifyPropertyChanged`（`DisplayText` 变更只通知该行，不重建 `ItemsSource`、不丢选中项），并新增 `ListBoxItemData.RefreshDisplayTexts(IEnumerable)`；`DictEntry` 新增 `RaiseDisplayChanged()` 与 `DictEntry.RefreshDisplayTexts(IEnumerable)` 静态方法。
+  - 四个宿主**全部**接入：`CollectionEditorDialog`（弹窗）、`CollectionEditorControl`（内联）、`DictionaryEditorDialog`（弹窗）、`DictionaryEditorControl`（内联），在各自内嵌属性页的 `PropertyValueChanged` 上重算显示文本。
+  - 只刷显示层：**不动数据、不重建列表、不影响选中项**，「确定才写回、取消丢弃」的既有语义完全不变。
+  - 实测（端到端探针）：集合编辑器改「预置位名称」`停车场1111 (45°,60°) → 停车场 (45°,60°)`、改「水平角度」`→ 停车场 (30°,60°)`，未编辑的行不受影响；字典编辑器改复杂值内部属性 `大门1111 (180°,90°) → 大门 (180°,90°)`，底层对象值同步正确。
+
+- **去除行内「修改红点」**：紧凑布局（`TitlePlacement=Left`）的属性行原先在属性名旁画了一个 6px 的红色圆点表示「已修改」，与行尾的 `R` 复位按钮是同一个标识的冗余重复。按宿主反馈**移除红点**，保留 `R` 按钮及其「未修改时隐藏（保留占位、不抖动）」的既有行为。其余行模板（Top / Pro）本就没有红点，未改动。
+
+- **事件页（EventPicker）与属性页对齐：分类可折叠 + 底部描述栏**：
+  - **分类折叠**：`EventCategory` 升级为与 `PropertyCategory` 同构（新增 `IsExpanded` + `INotifyPropertyChanged`）；平铺行的分类头由纯标签改为 `Expander`（`IsExpanded` TwoWay 绑定），折叠时该类事件行不再进入平铺列表（**不退回嵌套 Expander**，仍保持「压平 + 虚拟化」，避免历史上有过的虚拟化估算抖动）。折叠状态按分类名跨重建保留 —— 搜索输入每敲一键都会重建分类对象，若不记住则折叠会被反复弹开。
+  - **底部描述栏**：新增 `EventPicker.SelectedEvent`（点击事件行时更新），控件底部出现与属性页同款排布的描述栏（标题 + 说明）；`EventItem` 新增 `HasDescription`，**只有选中事件确有说明时才出现**（属性页即使无说明也会留一条空栏，事件页不做这种占位）。
+  - 实测（探针）：`TitlePlacement=Left` 行内 `Ellipse` 数量 0；事件页初始 6 行 → 折叠 Behavior 后 4 行 → 走一次完整重建（等价搜索/换对象）仍为 4 行且展开状态保持 → 重新展开回 6 行；选中带说明的 `Click` 时描述栏可见、选中无说明的 `MouseDown` 时隐藏。
+
+  ![EventPicker 事件页（分类折叠 + 底部描述栏）](https://raw.githubusercontent.com/1wangshuo/PropertyGridDemo/main/skill/images/event-picker-light.png)
+
+- **分类头底色改为面板色**：分类头用的是 HandyControl 的 `Expander`，其默认 `Background` 取 `SecondaryRegionBrush`（浅色皮肤 `#EEEEEE`），于是在浅色主题下渲染成一条比面板更深的灰带、深色主题下也是一条突兀的深灰横带。修复：属性页与事件页的分类头 `Expander` 都显式 `Background="{DynamicResource RegionBrush}"` —— 浅色皮肤下就是 `#FFFFFF`（近白面板色），深色皮肤下是正常深色面板，**仍然完全跟随主题、不写死任何色值**。实测分类头底色由 `#FFEEEEEE` 变为 `#FFFFFFFF`。
+
+- **「重置所有属性」连续点击闪退（关键崩溃修复）**：反复重置（或任何密集的值变更 + 紧随布局）时，UI 线程在布局里抛 `COMException 0x8000FFFF (E_UNEXPECTED)` —— 调用栈 `SolidColorBrush.ReleaseOnChannelCore → Visual.DisconnectAttachedResource → UIElement.RenderClose → Arrange → ContextLayoutManager.UpdateLayout`，进程直接退出（异常码 `0xE0434352`，Windows 事件日志 Application Error）。根因定位在**颜色编辑器行内的色块**：模板把该 `Border.Background` 绑到 `{Binding Value, Converter={StaticResource ColorToBrush}}`，而 `ColorToBrushConverter` 每次求值都 `new SolidColorBrush(Color)` 并冻结；属性值一变就换新画刷实例，旧实例在紧随的布局里被 WPF 从组合通道释放（`SolidColorBrush.ReleaseOnChannelCore`），连点重置时即命中释放失败。
+  - 修复一：`ColorToBrushConverter` 改为**按颜色缓存冻结画刷**（`ConcurrentDictionary<Color, SolidColorBrush>` + `GetFrozenBrush`），不再一次一 new；`ColorEditControl` 的 `ValueToBrush` / `Confirmed` 也改走同一缓存。
+  - 修复二（决定性）：`ColorEditControl` 新增**控件独占、不冻结**的画刷 `SwatchBrush`，模板色块 `Background` 改绑它（`{Binding SwatchBrush, RelativeSource={RelativeSource TemplatedParent}}`）；值变化只就地改该实例的 `Color`，**绑定值从头到尾是同一个实例**，不再出现「换画刷 → 旧实例被释放」的循环。
+  - 实测（端到端探针，先改 46 个属性制造真实值变更，再连点重置 + 每轮泵布局）：修复前 `page`（虚拟化开）**第 1 轮就崩**；修复后 `page` 60 轮、`novirt` 30 轮、`pro` 30 轮**全部通过、零异常**。**A/B 对照**：只把色块绑定改回旧的转换器写法，同一调用栈的崩溃立刻复现 —— 修复点单一、因果明确。
+  - 显示无回归（探针断言）：值变化前后色块 `Background` 为**同一画刷实例**、`Color` 正确跟随（`#FFFF0000 → #FF00FF00`），深浅主题下渲染正常。
+
+#### 🎯 平台支持
+
+- 随 NuGet 包分发 `net10.0-windows` 程序集（多目标 `net48;netcoreapp3.0;netcoreapp3.1;net6.0-windows;net7.0-windows;net8.0-windows;net10.0-windows`）。
+
+#### 🔄 向后兼容性
+
+- 仅修正默认显示文本，不改变属性读写、编辑器选择与序列化行为；重写了 `ToString()` 的既有显示零变化。
 
 ### v1.5.0（2026-10-02）
 
