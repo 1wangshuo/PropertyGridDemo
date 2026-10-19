@@ -7,7 +7,7 @@ using Microsoft.Win32;
 namespace PropertyGridLib
 {
     /// <summary>
-    /// 窗口分辨率/DPI 自适应助手（PropertyGridLib 内部版，与宿主 TeamAAS.Dialogs.UiScaler 同源）。
+    /// 窗口分辨率/DPI 自适应助手（PropertyGridLib 内部版，与宿主 TeamPLT.Dialogs.UiScaler 同源）。
     ///
     /// 设计：全应用使用"同一个全局缩放因子"——
     ///   主窗口（铺满屏幕）：按设计基准计算因子；
@@ -16,9 +16,9 @@ namespace PropertyGridLib
     ///
     /// 本类在独立 Demo 中可自管因子（AttachMain）；嵌入宿主时由宿主注入外部因子：
     ///   // 宿主启动处一次性接线（App.xaml.cs 等）：
-    ///   PropertyGridLib.UiScaler.ExternalScaleProvider = () => TeamAAS.Dialogs.UiScaler.GlobalScale;
-    ///   TeamAAS.Dialogs.UiScaler.ScaleChanged += () =>
-    ///       PropertyGridLib.UiScaler.SetExternalScale(TeamAAS.Dialogs.UiScaler.GlobalScale);
+    ///   PropertyGridLib.UiScaler.ExternalScaleProvider = () => TeamPLT.Dialogs.UiScaler.GlobalScale;
+    ///   TeamPLT.Dialogs.UiScaler.ScaleChanged += () =>
+    ///       PropertyGridLib.UiScaler.SetExternalScale(TeamPLT.Dialogs.UiScaler.GlobalScale);
     ///
     /// 用法：库内弹窗构造函数中调用 UiScaler.Attach(this);
     /// </summary>
@@ -67,11 +67,11 @@ namespace PropertyGridLib
 
         /// <summary>
         /// 解析当前应使用的缩放因子（弹窗占屏幕比例恒定，观感不随分辨率变化）：
-        /// 1) 宿主通过 ExternalScaleProvider 注入 —— 绝对服从（TeamAAS 主窗体口径）；
+        /// 1) 宿主通过 ExternalScaleProvider 注入 —— 绝对服从（TeamPLT 主窗体口径）；
         /// 2) 本类 AttachMain/SetExternalScale 已显式设置 —— 使用之；
         /// 3) 均未配置 —— 按"设计基准 1600×900 ÷ 当前屏幕工作区(DPI 逻辑像素)"推导，
         ///    使弹窗在 1600×900 与 4K 等不同分辨率下占据屏幕的比例一致（只放大不缩小，
-        ///    上限 2.0 防止失控）。这正是"TeamAAS 主窗体铺满屏幕等比缩放"在子窗体的对应实现。
+        ///    上限 2.0 防止失控）。这正是"TeamPLT 主窗体铺满屏幕等比缩放"在子窗体的对应实现。
         /// 
         /// 注意：此值会在 ApplyTransform 中统一除以系统 DPI 因子，
         /// 防止 WPF DPI 渲染 + LayoutTransform ScaleTransform 双重缩放导致高 DPI 屏幕上对话框膨胀。
@@ -95,7 +95,7 @@ namespace PropertyGridLib
         private static readonly Dictionary<Window, Size> _designSizes = new Dictionary<Window, Size>();
 
         /// <summary>
-        /// 主窗口：计算全局缩放因子并应用（仅独立宿主/Demo 使用；TeamAAS 有自己的 UiScaler）。
+        /// 主窗口：计算全局缩放因子并应用（仅独立宿主/Demo 使用；TeamPLT 有自己的 UiScaler）。
         /// 设计基准默认 1600x900，钳制 minScale~maxScale。
         /// </summary>
         public static void AttachMain(Window window, double refWidth = 1600, double refHeight = 900,
