@@ -123,7 +123,8 @@ namespace PropertyGridLib
         /// <summary>面板标题</summary>
         public static readonly DependencyProperty HeaderProperty =
             DependencyProperty.Register(nameof(Header), typeof(string), typeof(PropertyGridPro),
-                new FrameworkPropertyMetadata(string.Empty));
+                // 与基础 PropertyGrid 一致：默认「属性」，宿主按语境覆盖（如「项目属性」），空串 = 不要标题
+                new FrameworkPropertyMetadata("属性"));
 
         /// <summary>面板说明（标题下方灰色描述）</summary>
         public static readonly DependencyProperty HeaderDescriptionProperty =
@@ -148,12 +149,41 @@ namespace PropertyGridLib
         /// <summary>是否显示分类标题（关闭后所有属性平铺为单一列表）</summary>
         public static readonly DependencyProperty ShowCategoryHeadersProperty =
             DependencyProperty.Register(nameof(ShowCategoryHeaders), typeof(bool), typeof(PropertyGridPro),
-                new FrameworkPropertyMetadata(true));
+                new FrameworkPropertyMetadata(true, OnShowCategoryHeadersChanged));
+
+        /// <summary>排布形态：卡片式（默认） / 表单式（VS 2026 选项页风格）</summary>
+        public static readonly DependencyProperty LayoutProperty =
+            DependencyProperty.Register(nameof(Layout), typeof(ProLayout), typeof(PropertyGridPro),
+                new FrameworkPropertyMetadata(ProLayout.Card, OnLayoutChanged));
 
         /// <summary>值编辑器区域宽度（像素）</summary>
         public static readonly DependencyProperty EditorWidthProperty =
             DependencyProperty.Register(nameof(EditorWidth), typeof(double), typeof(PropertyGridPro),
                 new FrameworkPropertyMetadata(260d));
+
+        /// <summary>
+        /// 表单式（<see cref="ProLayout.Section"/>）左侧分类列的宽度（像素）。
+        /// 分类名与第一条属性同处一行，列宽决定"分类名 / 内容区"的分界位置。
+        /// 默认 152：约等于 VS 选项页在 760 宽面板上的视觉比例（约 20%）。
+        /// </summary>
+        public static readonly DependencyProperty CategoryColumnWidthProperty =
+            DependencyProperty.Register(nameof(CategoryColumnWidth), typeof(double), typeof(PropertyGridPro),
+                // 176：容得下「I. 基本信息」这类带序号的中文分类名（152 时会被省略成「I. 基本信…」）。
+                // 面板更窄时由模板里的 MinRatioLength 按面板宽 32% 自动收窄，不会把内容区挤死。
+                new FrameworkPropertyMetadata(176d));
+
+        /// <summary>
+        /// 图像属性缩略图的宽度（像素）。Pro 的行高由内容决定，可以给大图；
+        /// 基础 PropertyGrid 的行高是固定 34/56，走模板里的 FallbackValue（44×33）。
+        /// </summary>
+        public static readonly DependencyProperty ImageThumbnailWidthProperty =
+            DependencyProperty.Register(nameof(ImageThumbnailWidth), typeof(double), typeof(PropertyGridPro),
+                new FrameworkPropertyMetadata(88d));
+
+        /// <summary>图像属性缩略图的高度（像素）</summary>
+        public static readonly DependencyProperty ImageThumbnailHeightProperty =
+            DependencyProperty.Register(nameof(ImageThumbnailHeight), typeof(double), typeof(PropertyGridPro),
+                new FrameworkPropertyMetadata(66d));
 
         /// <summary>属性行模板；子属性递归渲染时复用同一模板，实现无限嵌套且样式统一</summary>
         public static readonly DependencyProperty RowTemplateProperty =
@@ -284,11 +314,43 @@ namespace PropertyGridLib
             set => SetValue(ShowCategoryHeadersProperty, value);
         }
 
+        /// <summary>
+        /// 排布形态：<see cref="ProLayout.Card"/>（默认，卡片式）或
+        /// <see cref="ProLayout.Section"/>（表单式，对齐 VS 2026 选项页）。
+        /// 两种形态都受 <see cref="ShowCategoryHeaders"/> 控制是否显示分类。
+        /// </summary>
+        public ProLayout Layout
+        {
+            get => (ProLayout)GetValue(LayoutProperty);
+            set => SetValue(LayoutProperty, value);
+        }
+
         /// <summary>值编辑器区域宽度</summary>
         public double EditorWidth
         {
             get => (double)GetValue(EditorWidthProperty);
             set => SetValue(EditorWidthProperty, value);
+        }
+
+        /// <summary>表单式左侧分类列宽度（像素）</summary>
+        public double CategoryColumnWidth
+        {
+            get => (double)GetValue(CategoryColumnWidthProperty);
+            set => SetValue(CategoryColumnWidthProperty, value);
+        }
+
+        /// <summary>图像属性缩略图宽度（默认 88）</summary>
+        public double ImageThumbnailWidth
+        {
+            get => (double)GetValue(ImageThumbnailWidthProperty);
+            set => SetValue(ImageThumbnailWidthProperty, value);
+        }
+
+        /// <summary>图像属性缩略图高度（默认 66）</summary>
+        public double ImageThumbnailHeight
+        {
+            get => (double)GetValue(ImageThumbnailHeightProperty);
+            set => SetValue(ImageThumbnailHeightProperty, value);
         }
 
         /// <summary>属性行模板（子属性递归复用以实现无限嵌套）</summary>
@@ -331,6 +393,19 @@ namespace PropertyGridLib
 
         private static void OnSelectedObjectChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
+            ((PropertyGridPro)d).RefreshProperties();
+        }
+
+        private static void OnShowCategoryHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            // 分类头的有无改变行集合结构，必须整表重建（Pro 没有同类型快速刷新路径）
+            ((PropertyGridPro)d).RefreshProperties();
+        }
+
+        private static void OnLayoutChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            // 行/分类模板由 ProFlatRowTemplateSelector 在 SelectTemplate 时按祖先的 Layout 现取，
+            // 这里只需重建一次行集合让选择器重新求值。
             ((PropertyGridPro)d).RefreshProperties();
         }
 
@@ -464,7 +539,10 @@ namespace PropertyGridLib
         if (_scrollViewer == null)
             _scrollViewer = _itemsControl.Template?.FindName("PART_ScrollViewer", _itemsControl) as ScrollViewer;
 
-        var rows = PropertyGrid.BuildFlatRows(categories);
+        // 表单式：分类名不由"分类头行"承担，而是写在所属分组第一行的左列里
+        //（否则分类名会独占一行，永远对不齐第一条属性）。
+        var sectionGroup = Layout == ProLayout.Section && ShowCategoryHeaders;
+        var rows = PropertyGrid.BuildFlatRows(categories, ShowCategoryHeaders && !sectionGroup, sectionGroup);
         double offset = _scrollViewer?.VerticalOffset ?? 0;
 
         // 预热只用于"首次填充"（offset=0）：修 CanContentScroll 下 VSP 首次布局用预测容器

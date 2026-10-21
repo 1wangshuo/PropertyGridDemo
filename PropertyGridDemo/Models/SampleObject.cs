@@ -115,6 +115,20 @@ namespace PropertyGridDemo.Models
         [DefaultValue(TransportProtocol.Rtsp)]
         public TransportProtocol Protocol { get; set; } = TransportProtocol.Rtsp;
 
+        // 以下两条专供 Small（TitlePlacement=Left）布局核对：
+        // 标题长度超出标题列 → 显示省略号，鼠标悬停 ToolTip 给出全文。
+        [Category("III. 网络配置")]
+        [DisplayName("网络连接超时时间（毫秒）")]
+        [Description("建立连接的最长等待时间，超时即判定设备离线")]
+        [DefaultValue(3000)]
+        public int ConnectTimeout { get; set; } = 3000;
+
+        [Category("III. 网络配置")]
+        [DisplayName("断线后自动重连次数上限")]
+        [Description("通讯中断后自动尝试重连的次数，0 表示不重连")]
+        [DefaultValue(3)]
+        public int AutoReconnectLimit { get; set; } = 3;
+
         // ============================================================
         // IV. 存储路径
         // ============================================================

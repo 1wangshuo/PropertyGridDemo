@@ -8,7 +8,7 @@ namespace PropertyGridDemo
     /// 反射、属性项与编辑器全部复用 PropertyGridLib，Demo 侧只提供数据模型与交互；
     /// 窗口自身所有配色均取自主题资源键，点击"切换主题"即可在浅色 / 深色间对比。
     /// </summary>
-    public partial class PropertyGridProDemoWindow : Window
+    public partial class PropertyGridProDemoWindow : HandyControl.Controls.Window
     {
         public PropertyGridProDemoWindow()
         {

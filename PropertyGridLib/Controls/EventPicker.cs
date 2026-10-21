@@ -217,7 +217,16 @@ namespace PropertyGridLib.Controls
             {
                 rows.Add(c);
                 if (!c.IsExpanded) continue;
-                rows.AddRange(c.Items);
+
+                // 标记组内首/末项：行模板据此画卡片的上/下边框与圆角，
+                // 与属性页的分类卡片保持同一套观感。
+                for (var i = 0; i < c.Items.Count; i++)
+                {
+                    var item = c.Items[i];
+                    item.IsGroupFirst = i == 0;
+                    item.IsGroupLast = i == c.Items.Count - 1;
+                    rows.Add(item);
+                }
             }
             RebuildRows(rows);
         }

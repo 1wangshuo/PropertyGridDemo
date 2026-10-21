@@ -498,4 +498,63 @@ namespace PropertyGridLib.Converters
             return value;
         }
     }
+
+    /// <summary>
+    /// 取长度值的指定比例，供 Small 紧凑布局的标题列做"Auto 但封顶"：
+    /// 标题列本身是 Auto（短标题不占多余宽度，编辑器多吃空间），
+    /// 但要给标题一个上限，否则长标题会把编辑器挤到只剩几十像素。
+    /// 参数为比例（"0.5" = 一半）；参数缺省或非数字时按 0.5 处理。
+    /// 传入长度无效（0 / NaN，布局尚未定型）时返回 Infinity = 不封顶，
+    /// 避免"第一轮按 0 封顶 → 第二轮再放开"的反复测量。
+    /// </summary>
+    public class RatioLengthConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is double length) || double.IsNaN(length) || length <= 0)
+                return double.PositiveInfinity;
+
+            var ratio = 0.5;
+            if (parameter is string text &&
+                double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
+                ratio = parsed;
+
+            return Math.Max(0, length * ratio);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// 表单式分类列宽：取「期望列宽」和「面板宽 × 比例」里较小的那个。
+    ///
+    /// 为什么要它：分类列是固定像素（默认 152），面板被拖窄到 250 左右时它要占掉 65%，
+    /// 右侧属性只剩几十像素 —— 属性名被省略成两个字、说明文字竖着一个个排，
+    /// 看上去就像"内容全空"。这里让它随面板收窄，宁可分类名省略也别挤死内容区。
+    ///
+    /// values[0] = 面板可用宽度，values[1] = 期望列宽；parameter = 最大占比（默认 0.32）。
+    /// </summary>
+    public class MinRatioLengthConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values == null || values.Length < 2) return double.NaN;
+
+            var preferred = values[1] is double d && !double.IsNaN(d) && d > 0 ? d : 152d;
+
+            var ratio = 0.32;
+            if (parameter is string text &&
+                double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed) && parsed > 0)
+                ratio = parsed;
+
+            // 面板还没排版（宽度 0 / NaN）时先用期望值，避免第一轮算出 0 再重排
+            if (!(values[0] is double available) || double.IsNaN(available) || available <= 0) return preferred;
+
+            return Math.Max(0, Math.Min(available * ratio, preferred));
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
 }

@@ -45,7 +45,9 @@ namespace PropertyGridLib.Controls
     public class PropertyItem : IPropertyItem, INotifyPropertyChanged
     {
         private readonly PropertyInfo _propertyInfo;
-        private readonly object _owner;
+        /// <summary>宿主对象。不是 readonly：同类型换对象时由 <see cref="RebindOwner"/> 原地换绑，
+        /// 从而复用属性元数据与已生成的行控件（换设备/换产品是高频操作，整表反射重建很贵）。</summary>
+        private object _owner;
         private readonly ICommand _resetCommand;
         private readonly int _maxDepth;
         private readonly int _currentDepth;
@@ -975,6 +977,291 @@ namespace PropertyGridLib.Controls
             OnPropertyChanged(nameof(IsDefault));
             OnPropertyChanged(nameof(IsModified));
             OnPropertyChanged(nameof(ChildProperties));
+            OnPropertyChanged(nameof(IsLink));
+            OnPropertyChanged(nameof(BoolValue));
+        }
+
+        #region 值形态扩展（链接 / 布尔视图）
+
+        /// <summary>
+        /// 当前值是一个可访问链接（http / https / ftp / mailto）。
+        /// 链接编辑器模板据此把字符串渲染成蓝色可点击文本，点击用系统默认程序打开。
+        /// </summary>
+        public bool IsLink
+        {
+            get
+            {
+                var text = ValueString;
+                if (string.IsNullOrWhiteSpace(text)) return false;
+                if (!Uri.TryCreate(text.Trim(), UriKind.Absolute, out var uri)) return false;
+                return uri.Scheme == Uri.UriSchemeHttp
+                    || uri.Scheme == Uri.UriSchemeHttps
+                    || uri.Scheme == Uri.UriSchemeFtp
+                    || uri.Scheme == Uri.UriSchemeMailto;
+            }
+        }
+
+        /// <summary>
+        /// 当前值的布尔视图：勾选式属性行（[图5] 那种「复选框 + 标题 + 说明」）直接双向绑这个。
+        /// 直接绑 <see cref="Value"/>（object）到 CheckBox.IsChecked 会因类型不可转而不生效。
+        /// </summary>
+        public bool BoolValue
+        {
+            get => Value is bool b && b;
+            set => Value = value;
+        }
+
+        private ICommand _openLinkCommand;
+
+        /// <summary>打开链接（系统默认浏览器/邮件客户端）。链接编辑器模板绑到按钮命令。</summary>
+        public ICommand OpenLinkCommand =>
+            _openLinkCommand ?? (_openLinkCommand = new RelayCommand(_ => OpenLink(), _ => IsLink));
+
+        private void OpenLink()
+        {
+            var text = ValueString;
+            if (string.IsNullOrWhiteSpace(text)) return;
+            try
+            {
+                System.Diagnostics.Process.Start(
+                    new System.Diagnostics.ProcessStartInfo(text.Trim()) { UseShellExecute = true });
+            }
+            catch
+            {
+                // 无默认程序 / 被策略拦截时静默失败：属性面板不弹框打断现场
+            }
+        }
+
+        #endregion
+
+        #region 关键属性标记 / 分组首行
+
+        private bool _highlightResolved;
+        private bool _isHighlighted;
+
+        /// <summary>
+        /// [Highlight] 标记：true = 关键属性。
+        /// 属性面板据此打强调标记（基础网格标题旁的小圆点 / 表单式属性块左侧的竖线）。
+        /// </summary>
+        public bool IsHighlighted
+        {
+            get
+            {
+                if (!_highlightResolved) ResolveHighlight();
+                return _isHighlighted;
+            }
+        }
+
+        /// <summary>[Highlight(Tip = "...")] 指定的悬停提示；为空时标记不挂 ToolTip。</summary>
+        public string HighlightTip { get; private set; }
+
+        private void ResolveHighlight()
+        {
+            _highlightResolved = true;
+            var attr = GetAttribute<Attributes.HighlightAttribute>();
+            if (attr == null) return;
+            _isHighlighted = true;
+            HighlightTip = attr.Tip;
+        }
+
+        private bool _isGroupFirst;
+
+        /// <summary>
+        /// 是否为其所属分类的第一项（表单式分组排布用，由 PropertyGridPro 在压平行集合时写入）。
+        /// 为 true 时左侧分类列渲染分类名，其余行左列留空 ——
+        /// 这样"分类名与第一条属性同一行"，不需要往列表里插独立的分类头行。
+        /// </summary>
+        public bool IsGroupFirst
+        {
+            get => _isGroupFirst;
+            internal set
+            {
+                if (_isGroupFirst == value) return;
+                _isGroupFirst = value;
+                OnPropertyChanged(nameof(IsGroupFirst));
+            }
+        }
+
+        #region 图像预览
+
+        private ImageSource _imagePreview;
+        private string _imageInfo;
+        private object _imageCacheFor;
+        private bool _imageCacheValid;
+
+        /// <summary>
+        /// 该属性的值是不是图像：内置识别 ImageSource / 图像文件字节流，
+        /// 以及宿主用 <see cref="ImagePreviewRegistry"/> 登记过的自定义图像类型（如 GenImage）。
+        /// </summary>
+        public bool IsImage
+        {
+            get
+            {
+                var value = Value;
+                if (value != null) return ImagePreviewRegistry.CanPreview(value);
+                // 值为 null：按"声明的类型"判断。属性声明成图像类型、当前还没图时，
+                // 面板应显示"无预览"占位，而不是退化成一个空的可展开行。
+                return ImagePreviewRegistry.CanPreviewType(EffectivePropertyType);
+            }
+        }
+
+        /// <summary>
+        /// 缩略图。按"值对象引用"缓存：同一次刷新里反复取值不会重复解码，
+        /// 换图（Value 变成新对象）才重新转换。转换失败返回 null，面板显示"无预览"。
+        /// </summary>
+        public ImageSource ImagePreview
+        {
+            get
+            {
+                var current = Value;
+                if (_imageCacheValid && ReferenceEquals(_imageCacheFor, current)) return _imagePreview;
+
+                _imageCacheValid = true;
+                _imageCacheFor = current;
+                _imagePreview = ImagePreviewRegistry.Create(current, out var info);
+                _imageInfo = info;
+                return _imagePreview;
+            }
+        }
+
+        /// <summary>图像说明（尺寸 / 像素格式等，由登记表或 <see cref="IImagePreviewSource"/> 提供）。</summary>
+        public string ImageInfo
+        {
+            get
+            {
+                _ = ImagePreview;   // 说明与缩略图同一次转换产出
+                return _imageInfo;
+            }
+        }
+
+        private ICommand _previewImageCommand;
+
+        /// <summary>打开大图预览窗口（缩略图点击）。</summary>
+        public ICommand PreviewImageCommand =>
+            _previewImageCommand ?? (_previewImageCommand = new RelayCommand(_ => ShowImagePreview(), _ => IsImage));
+
+        private void ShowImagePreview()
+        {
+            var image = ImagePreview;
+            if (image == null) return;
+            try
+            {
+                ImagePreviewWindow.ShowPreview(image, DisplayName, ImageInfo);
+            }
+            catch
+            {
+                // 预览窗口打不开不影响属性面板
+            }
+        }
+
+        #endregion
+
+        #region 编辑器装饰件（[EditorChrome]）
+
+        private Attributes.EditorChromeAttribute _chrome;
+        private bool _chromeResolved;
+
+        private Attributes.EditorChromeAttribute Chrome
+        {
+            get
+            {
+                if (!_chromeResolved)
+                {
+                    _chromeResolved = true;
+                    _chrome = GetAttribute<Attributes.EditorChromeAttribute>();
+                }
+                return _chrome;
+            }
+        }
+
+        /// <summary>[EditorChrome(ShowReset=false)] → 这一行不显示重置按钮。</summary>
+        public bool ShowResetButton => Chrome?.ShowReset ?? true;
+
+        /// <summary>[EditorChrome(ResetText="默认")] → 重置按钮上的字，默认 "R"。</summary>
+        public string ResetText
+        {
+            get
+            {
+                var text = Chrome?.ResetText;
+                return string.IsNullOrEmpty(text) ? "R" : text;
+            }
+        }
+
+        /// <summary>[EditorChrome(ResetToolTip="...")] → 重置按钮悬停文案；未指定时取本地化默认值。</summary>
+        public string ResetToolTip
+        {
+            get
+            {
+                var tip = Chrome?.ResetToolTip;
+                if (!string.IsNullOrEmpty(tip)) return tip;
+                try { return Localization.LocalizationManager.GetString("ResetToDefault"); }
+                catch { return null; }
+            }
+        }
+
+        /// <summary>[EditorChrome(ShowTypeHint=true/false)] → 覆盖该行的类型提示开关；null = 跟随全局。</summary>
+        public bool? ShowTypeHintOverride => Chrome?.ShowTypeHint;
+
+        #endregion
+
+        private bool _isGroupLast;
+
+        /// <summary>
+        /// 是否为其所属分类的最后一项（分类"卡片"样式的收口用）：
+        /// 为真时该行画下圆角与下边框，把一组属性收成一个圆角卡片。
+        /// 由 <c>PropertyGrid.BuildFlatRows</c> 在压平行集合时写入。
+        /// </summary>
+        public bool IsGroupLast
+        {
+            get => _isGroupLast;
+            internal set
+            {
+                if (_isGroupLast == value) return;
+                _isGroupLast = value;
+                OnPropertyChanged(nameof(IsGroupLast));
+            }
+        }
+
+        private bool _showGroupSeparator;
+
+        /// <summary>
+        /// 该行顶部要不要画一条"分类之间的横向分隔线"。
+        /// = 分组首行 且 不是第一个分组（第一个分组与页头之间已有页头自带的分隔线，不重复画）。
+        /// 由 PropertyGridPro 在压平行集合时写入，模板只负责显示。
+        /// </summary>
+        public bool ShowGroupSeparator
+        {
+            get => _showGroupSeparator;
+            internal set
+            {
+                if (_showGroupSeparator == value) return;
+                _showGroupSeparator = value;
+                OnPropertyChanged(nameof(ShowGroupSeparator));
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 换绑宿主对象（同类型快速刷新用）：
+        /// 属性元数据（PropertyInfo / 特性 / 枚举表 / 自定义编辑器）全部与类型绑定，换实例时不需要动；
+        /// 只需换取值/写值的宿主，并重算「原值基线」（Reset 与 IsModified 的依据）、
+        /// 丢掉从旧宿主的值上反射出来的子属性缓存。
+        ///
+        /// 由 <c>PropertyGrid</c> 在「新旧 SelectedObject 类型相同且没有展开行」时调用，
+        /// 宿主侧无感知：仍然只是给 SelectedObject 赋新对象。
+        /// </summary>
+        internal void RebindOwner(object owner)
+        {
+            if (owner == null || ReferenceEquals(owner, _owner)) return;
+
+            _owner = owner;
+            _childProperties = null;   // 子属性是从旧宿主的属性值上反射出来的，必须按新宿主重来
+            _isExpanded = false;       // 快速刷新只在"无展开行"时走，这里保持状态一致
+            SaveOriginalValue();       // 原值基线跟着新宿主重取，否则 R 复位会把旧对象的值写进新对象
+
+            Refresh();
+            if (_enumType != null) OnPropertyChanged(nameof(EnumSelectedItem));
         }
 
         /// <summary>浏览文件</summary>

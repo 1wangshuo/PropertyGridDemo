@@ -22,13 +22,48 @@ namespace PropertyGridLib
         /// <summary>类别头模板（竖条 + 分类名；分类名为空时不渲染）</summary>
         public DataTemplate? CategoryTemplate { get; set; }
 
+        /// <summary>表单式（<see cref="ProLayout.Section"/>）的类别头模板：左侧大标题 + 右侧延伸分隔线</summary>
+        public DataTemplate? SectionCategoryTemplate { get; set; }
+
+        /// <summary>表单式的属性行模板：名称 → 说明 → 编辑器，上下排布</summary>
+        public DataTemplate? SectionRowTemplate { get; set; }
+
+        /// <summary>表单式的布尔勾选项模板：复选框 + 名称 + 说明</summary>
+        public DataTemplate? CheckRowTemplate { get; set; }
+
+        /// <summary>
+        /// 形态回退值：正常情况下直接从祖先 <see cref="PropertyGridPro"/> 读 <see cref="PropertyGridPro.Layout"/>，
+        /// 只有选择器被单独使用（不在 Pro 里）时才需要显式设置。
+        /// </summary>
+        public ProLayout Layout { get; set; } = ProLayout.Card;
+
         public override DataTemplate? SelectTemplate(object item, DependencyObject container)
         {
+            var pro = FindAncestor<PropertyGridPro>(container);
+            var layout = pro?.Layout ?? Layout;
+            var section = layout == ProLayout.Section;
+
             if (item is PropertyCategory)
-                return CategoryTemplate;
+                return (section ? SectionCategoryTemplate : null) ?? CategoryTemplate;
+
+            // 表单式 + 布尔属性 → 勾选项形态（复选框 + 名称 + 说明）。
+            // 卡片式里布尔仍是一行下拉：窄卡片里勾选项反而更占高度。
+            // 注意 bool 默认的 CustomEditor 是 DropDown（True/False 下拉），
+            // 只有宿主用特性显式指定了别的编辑器（开关/滑块等）时才让位。
+            if (section &&
+                CheckRowTemplate != null &&
+                item is PropertyItem pi &&
+                pi.EffectivePropertyType == typeof(bool) &&
+                (pi.CustomEditor == CustomEditorType.None || pi.CustomEditor == CustomEditorType.DropDown))
+            {
+                return CheckRowTemplate;
+            }
+
+            if (section && SectionRowTemplate != null)
+                return SectionRowTemplate;
 
             // 属性行：交给宿主的 RowTemplate，宿主整体替换行模板时同样生效
-            return FindAncestor<PropertyGridPro>(container)?.RowTemplate;
+            return pro?.RowTemplate;
         }
 
         private static T? FindAncestor<T>(DependencyObject? current) where T : class

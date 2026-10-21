@@ -6,7 +6,7 @@ using PropertyGridLib.Controls;
 
 namespace PropertyGridDemo
 {
-    public partial class EventPickerDemoWindow : Window
+    public partial class EventPickerDemoWindow : HandyControl.Controls.Window
     {
         private Button _sourceButton;
 

@@ -27,6 +27,13 @@ namespace PropertyGridLib.Controls
         public DataTemplate ToggleSwitchTemplate { get; set; }
         /// <summary>多行文本（富文本查看）编辑器模板，由 [MultilineText] 特性触发</summary>
         public DataTemplate MultilineTextTemplate { get; set; }
+        /// <summary>链接编辑器模板：字符串值本身是 http/https/ftp/mailto 链接时自动启用（蓝色可点击）</summary>
+        public DataTemplate LinkTemplate { get; set; }
+        /// <summary>
+        /// 图像预览编辑器模板：值本身是图像时启用（ImageSource / 图像文件字节流 /
+        /// 经 ImagePreviewRegistry 登记的自定义图像类型，如平台契约的 GenImage）。
+        /// </summary>
+        public DataTemplate ImageTemplate { get; set; }
         public DataTemplate DefaultTemplate { get; set; }
 
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
@@ -36,6 +43,14 @@ namespace PropertyGridLib.Controls
                 // ===== 宿主自定义编辑器模板优先级最高 =====
                 if (propertyItem.CustomEditorTemplate != null)
                     return propertyItem.CustomEditorTemplate;
+
+                // ===== 值形态：图像 =====
+                // 必须排在 CustomEditor 分派之前：自定义图像类型（GenImage 这类 class）
+                // 会被 DetectCustomEditor 判成 Expandable（可展开对象），
+                // 那样就会命中 ExpandableTemplate、显示成一个可展开的类型名，
+                // 永远轮不到下面的图像模板。
+                if (ImageTemplate != null && propertyItem.IsImage)
+                    return ImageTemplate;
 
                 // 根据 CustomEditor 优先选择
                 switch (propertyItem.CustomEditor)
@@ -70,6 +85,11 @@ namespace PropertyGridLib.Controls
 
                 // 根据属性类型选择（使用 EffectivePropertyType 以支持 FormulaBound<T>）
                 var propertyType = propertyItem.EffectivePropertyType;
+
+                // 字符串值本身是链接（http/https/ftp/mailto）→ 蓝色可点击文本，点击用默认程序打开。
+                // 放在类型分派之前：链接是"值的形态"，与属性声明类型无关（string 才有意义）。
+                if (propertyType == typeof(string) && propertyItem.IsLink)
+                    return LinkTemplate ?? StringTemplate ?? DefaultTemplate;
 
                 if (propertyType == typeof(string))
                     return StringTemplate ?? DefaultTemplate;

@@ -33,11 +33,33 @@ namespace PropertyGridLib
 
         public static readonly DependencyProperty ShowDescriptionProperty =
             DependencyProperty.Register(nameof(ShowDescription), typeof(bool), typeof(PropertyGrid),
+                // 默认开启：底部常驻描述区（可上下拖动分隔条调整高度）。
+                // 不想占高度的宿主可显式关掉。
                 new PropertyMetadata(true));
 
         public static readonly DependencyProperty ShowSearchBarProperty =
             DependencyProperty.Register(nameof(ShowSearchBar), typeof(bool), typeof(PropertyGrid),
                 new PropertyMetadata(true));
+
+        /// <summary>是否显示「展开 | 折叠」批量按钮组：宿主只想要纯属性表时可关掉。</summary>
+        public static readonly DependencyProperty ShowExpandCollapseProperty =
+            DependencyProperty.Register(nameof(ShowExpandCollapse), typeof(bool), typeof(PropertyGrid),
+                new PropertyMetadata(true));
+
+        /// <summary>是否显示分类头：false = 不分组，所有属性按原顺序平铺往下排。</summary>
+        public static readonly DependencyProperty ShowCategoryHeadersProperty =
+            DependencyProperty.Register(nameof(ShowCategoryHeaders), typeof(bool), typeof(PropertyGrid),
+                new PropertyMetadata(true, OnShowCategoryHeadersChanged));
+
+        /// <summary>
+        /// 顶部标题（如「属性」）。为空时不占任何高度 ——
+        /// 宿主把它当纯控件用时（嵌在别处的面板里）不需要额外标题。
+        /// </summary>
+        public static readonly DependencyProperty HeaderProperty =
+            DependencyProperty.Register(nameof(Header), typeof(string), typeof(PropertyGrid),
+                // 默认就叫「属性」：标题就是"属性"这件事本身的默认值，
+                // 宿主有特殊语境（如「项目属性」「参数」）再覆盖；设成空串可完全隐藏。
+                new PropertyMetadata("属性"));
 
         public static readonly DependencyProperty SelectedPropertyItemProperty =
             DependencyProperty.Register(nameof(SelectedPropertyItem), typeof(IPropertyItem), typeof(PropertyGrid),
@@ -61,7 +83,9 @@ namespace PropertyGridLib
 
         public static readonly DependencyProperty ShowTypeHintProperty =
             DependencyProperty.Register(nameof(ShowTypeHint), typeof(bool), typeof(PropertyGrid),
-                new PropertyMetadata(true));
+                // 默认关闭：紧凑行（尤其 Small 布局，行高 34）里 "(int)/(Double)" 这类提示
+                // 会被挤到 ⇄ 与 ✕ 之间，看起来像多出来一个控件。需要时宿主显式打开。
+                new PropertyMetadata(false));
 
         // ===== 网格级只读：所有条目（含懒加载的子属性）强制只读，编辑器变只读、重置禁用 =====
 
@@ -139,6 +163,30 @@ namespace PropertyGridLib
         {
             get => (bool)GetValue(ShowSearchBarProperty);
             set => SetValue(ShowSearchBarProperty, value);
+        }
+
+        /// <summary>是否显示「展开 | 折叠」批量按钮组（默认显示）</summary>
+        public bool ShowExpandCollapse
+        {
+            get => (bool)GetValue(ShowExpandCollapseProperty);
+            set => SetValue(ShowExpandCollapseProperty, value);
+        }
+
+        /// <summary>
+        /// 是否显示分类头（默认显示）。设为 false 时不做分组：所有属性按声明顺序平铺往下排，
+        /// 没有分类标题与折叠箭头。
+        /// </summary>
+        public bool ShowCategoryHeaders
+        {
+            get => (bool)GetValue(ShowCategoryHeadersProperty);
+            set => SetValue(ShowCategoryHeadersProperty, value);
+        }
+
+        /// <summary>顶部标题（如「属性」）；留空则不占高度。</summary>
+        public string Header
+        {
+            get => (string)GetValue(HeaderProperty);
+            set => SetValue(HeaderProperty, value);
         }
 
         /// <summary>当前选中的属性项</summary>
@@ -318,6 +366,11 @@ namespace PropertyGridLib
 
         // 刷新代数：快速连选时旧 BeginInvoke 回调据此作废（见 RefreshProperties）
         private int _refreshGeneration;
+
+        // 上一轮刷新过的对象与搜索条件：换对象时据此判断能否走"原地换绑"快速路径
+        // （同类型 + 同搜索条件 = 属性集合与行集合都不变，见 TryRebindSameShape）
+        private object _lastRefreshedObject;
+        private string _lastFilterText;
 
         // ===== 1.4.0 事件页部件 =====
         private EventPicker _eventPicker;
@@ -529,6 +582,15 @@ namespace PropertyGridLib
             ((PropertyGrid)d).RefreshProperties();
         }
 
+        private static void OnShowCategoryHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            var grid = (PropertyGrid)d;
+            // 显示/隐藏分类头改变的是"行集合结构"，同类型快速刷新会直接复用旧行集合，
+            // 所以先让快速路径失效，强制走一次全量重建。
+            grid._lastRefreshedObject = null;
+            grid.RefreshProperties();
+        }
+
         /// <summary>
         /// 把 EnableVirtualization 落到实际列表控件上。关闭时容器不再回收复用，
         /// 行为回到 1.3.4（全量生成行），用于宿主自定义行模板出现串值时的回退。
@@ -720,6 +782,10 @@ namespace PropertyGridLib
 
                     ShowNormalMode();
 
+                    // 同类型换对象（切设备 / 切产品这类高频操作）走快速路径：行控件原地保留，
+                    // 只把每个属性项的宿主换成新对象并刷新值，不重建整表。返回 true 表示已处理。
+                    if (TryRebindSameShape(SelectedObject)) return;
+
                     _allProperties = PropertyItemFactory.CreateProperties(SelectedObject).Cast<IPropertyItem>().ToList();
 
                     // 内存释放：列表整体重建后，旧的选中引用（_selectedProperty 字段与 SelectedPropertyItem DP）
@@ -857,6 +923,44 @@ namespace PropertyGridLib
                 || type == typeof(Guid);
         }
 
+        /// <summary>
+        /// 换对象的快速刷新路径：新旧 <see cref="SelectedObject"/> 运行时类型相同、
+        /// 搜索条件未变、且当前没有展开的子属性行时，属性元数据与可见行集合完全一致 ——
+        /// 只需把每个属性项的宿主换成新对象并刷新值，**行控件、分类折叠状态、滚动位置全部原地保留**。
+        ///
+        /// 返回 false 表示条件不满足，调用方回落到原来的"反射重建整表"路径。
+        /// 判据说明：
+        /// · 类型相同 → PropertyInfo / 特性 / 枚举表 / 自定义编辑器全部一致，无需重新反射；
+        /// · 无展开行 → 平铺行集合里没有从旧宿主的值上反射出来的子属性行（子属性必须重来，交给全量路径）；
+        /// · 搜索条件相同 → 可见行集合不变，不需要重算过滤与分类分组。
+        /// </summary>
+        private bool TryRebindSameShape(object target)
+        {
+            var previous = _lastRefreshedObject;
+            if (target == null || previous == null) return false;
+            if (_allProperties == null || _allProperties.Count == 0) return false;
+            if (_itemsControl == null || _flatRows == null) return false;
+
+            if (ReferenceEquals(target, previous)) return true;   // 同一对象：值已在刷新时读过，无需重建
+            if (target.GetType() != previous.GetType()) return false;
+
+            if (!string.Equals(_lastFilterText ?? string.Empty, SearchText ?? string.Empty, StringComparison.Ordinal))
+                return false;
+
+            foreach (var item in _allProperties)
+            {
+                if (item is Controls.PropertyItem pi && pi.IsExpanded) return false;
+            }
+
+            foreach (var item in _allProperties)
+            {
+                (item as Controls.PropertyItem)?.RebindOwner(target);
+            }
+
+            _lastRefreshedObject = target;
+            return true;
+        }
+
         /// <summary>应用搜索过滤</summary>
         private void ApplyFilter()
         {
@@ -883,7 +987,7 @@ namespace PropertyGridLib
                 category.PropertyChanged -= OnCategoryPropertyChanged;
                 category.PropertyChanged += OnCategoryPropertyChanged;
             }
-            _flatRows = BuildFlatRows(categories);
+            _flatRows = BuildFlatRows(categories, ShowCategoryHeaders);
             _flatRowCount = _flatRows.Count;
 
             // 项滚动（CanContentScroll=True）虚拟化依赖"平均行高估算"决定滚动度量：
@@ -901,6 +1005,10 @@ namespace PropertyGridLib
             {
                 SelectedPropertyItem = filtered[0];
             }
+
+            // 记录本轮快照：下一次换对象时据此判断能否走原地换绑（见 TryRebindSameShape）
+            _lastRefreshedObject = SelectedObject;
+            _lastFilterText = SearchText ?? string.Empty;
         }
 
         /// <summary>定位列表 ScrollViewer（滚动诊断用）：模板内已命名 PART_ScrollViewer，直接取；</summary>
@@ -1024,17 +1132,40 @@ namespace PropertyGridLib
         /// 子属性不再嵌套在父行内部的 ItemsControl 里（嵌套的父行会变成巨行，
         /// Recycling 复用它给普通行时高度残留，导致滚动范围乱跳）。
         /// internal：PropertyGridPro 复用同一套压平逻辑，避免两份实现各自漂移。</summary>
-        internal static List<object> BuildFlatRows(IEnumerable<PropertyCategory> categories)
+        internal static List<object> BuildFlatRows(IEnumerable<PropertyCategory> categories, bool includeCategoryHeaders = true, bool markGroupFirst = false)
         {
             var rows = new List<object>();
             if (categories == null) return rows;
 
+            var firstGroup = true;
             foreach (var category in categories)
             {
-                rows.Add(category);
-                if (!category.IsExpanded) continue;
+                // 不显示分类头时（ShowCategoryHeaders=false）：分组对象仍参与过滤与排序，
+                // 只是不再往行集合里插"类别头"这一项 —— 视觉上就是全部属性平铺往下排。
+                if (includeCategoryHeaders)
+                {
+                    rows.Add(category);
+                    if (!category.IsExpanded) continue;
+                }
+                var isFirstOfGroup = true;
+                var lastItem = category.Items.Count > 0 ? category.Items[category.Items.Count - 1] as PropertyItem : null;
                 foreach (var item in category.Items)
+                {
+                    // markGroupFirst：分类名改由"分组首行"自己渲染（表单式），
+                    // 这样分类名与第一条属性天然同一行，不会多出一个独占一行的分类头行。
+                    if (item is PropertyItem pi)
+                    {
+                        pi.IsGroupFirst = markGroupFirst && isFirstOfGroup;
+                        // 分类"卡片"的收口：每组最后一行画下圆角
+                        pi.IsGroupLast = ReferenceEquals(pi, lastItem);
+                        // 分类之间的横向分隔线：只在分组首行、且不是第一个分组时画
+                        //（第一个分组上方已经有页头自带的分隔线）
+                        pi.ShowGroupSeparator = markGroupFirst && isFirstOfGroup && !firstGroup;
+                    }
+                    isFirstOfGroup = false;
                     AppendItemRecursive(rows, item, 0);
+                }
+                firstGroup = false;
             }
             return rows;
         }
