@@ -7,7 +7,7 @@ using PropertyGridDemo.Models;
 
 namespace PropertyGridDemo
 {
-    public partial class CollectionEditorDemoWindow : Window, INotifyPropertyChanged
+    public partial class CollectionEditorDemoWindow : HandyControl.Controls.Window, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 

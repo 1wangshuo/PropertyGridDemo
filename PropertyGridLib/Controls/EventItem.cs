@@ -59,6 +59,36 @@ namespace PropertyGridLib.Controls
             return new EventItem(info.Name, info.EventHandlerType, null, category, description, displayName);
         }
 
+        private bool _isGroupFirst;
+        private bool _isGroupLast;
+
+        /// <summary>
+        /// 是否为其分类的第一项（分类"卡片"样式的起手：决定这一行要不要画上边框/上圆角）。
+        /// 由 <c>EventPicker</c> 在压平行集合时写入。
+        /// </summary>
+        public bool IsGroupFirst
+        {
+            get => _isGroupFirst;
+            internal set
+            {
+                if (_isGroupFirst == value) return;
+                _isGroupFirst = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGroupFirst)));
+            }
+        }
+
+        /// <summary>是否为其分类的最后一项（负责补下边框与下圆角，把一组事件收成卡片）。</summary>
+        public bool IsGroupLast
+        {
+            get => _isGroupLast;
+            internal set
+            {
+                if (_isGroupLast == value) return;
+                _isGroupLast = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGroupLast)));
+            }
+        }
+
         /// <summary>事件名（代码中的名称）</summary>
         public string Name { get; }
 

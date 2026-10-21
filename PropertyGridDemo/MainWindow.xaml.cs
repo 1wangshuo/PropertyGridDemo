@@ -12,7 +12,7 @@ using PropertyGridDemo.Models;
 
 namespace PropertyGridDemo
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow : HandyControl.Controls.Window
     {
         private bool _useSecondObject;
         private bool _isEnglish;
@@ -91,6 +91,15 @@ namespace PropertyGridDemo
         private void CollectionEditorDemo_Click(object sender, RoutedEventArgs e)
         {
             var win = new CollectionEditorDemoWindow
+            {
+                Owner = this
+            };
+            win.ShowDialog();
+        }
+
+        private void FormLayoutDemo_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new FormLayoutDemoWindow
             {
                 Owner = this
             };
