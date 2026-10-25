@@ -29,9 +29,18 @@
                 <CheckBox x:Name="chkSection" Content="Pro 用表单式（VS2026）" IsChecked="True"
                           VerticalAlignment="Center" Margin="0,0,16,0"
                           Checked="Shape_Changed" Unchecked="Shape_Changed"/>
-                <CheckBox x:Name="chkHeader" Content="Pro 显示标题区" IsChecked="True"
+                <CheckBox x:Name="chkHeader" Content="显示标题区" IsChecked="True"
                           VerticalAlignment="Center" Margin="0,0,16,0"
-                          Checked="Shape_Changed" Unchecked="Shape_Changed"/>
+                          Checked="Shape_Changed" Unchecked="Shape_Changed"
+                          ToolTip="顶部标题区（如「属性」）：普通版与 Pro 表单版都受控"/>
+                <CheckBox x:Name="chkDesc" Content="普通描述栏" IsChecked="True"
+                          VerticalAlignment="Center" Margin="0,0,16,0"
+                          Checked="Shape_Changed" Unchecked="Shape_Changed"
+                          ToolTip="普通版 PropertyGrid 底部描述栏（默认显示）"/>
+                <CheckBox x:Name="chkProDesc" Content="Pro 描述栏" IsChecked="False"
+                          VerticalAlignment="Center" Margin="0,0,16,0"
+                          Checked="Shape_Changed" Unchecked="Shape_Changed"
+                          ToolTip="Pro 默认不显示——属性说明已写在每行标题下；勾上才额外挂底部描述栏"/>
                 <TextBlock Text="链接属性可直接点击打开" VerticalAlignment="Center"
                            Foreground="{DynamicResource SecondaryTextBrush}"/>
             </StackPanel>

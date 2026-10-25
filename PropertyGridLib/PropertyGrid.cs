@@ -34,8 +34,8 @@ namespace PropertyGridLib
         public static readonly DependencyProperty ShowDescriptionProperty =
             DependencyProperty.Register(nameof(ShowDescription), typeof(bool), typeof(PropertyGrid),
                 // 默认开启：底部常驻描述区（可上下拖动分隔条调整高度）。
-                // 不想占高度的宿主可显式关掉。
-                new PropertyMetadata(true));
+                // 不想占高度的宿主可显式关掉（描述栏 + 拖拽分割条一起隐藏）。
+                new PropertyMetadata(true, OnShowDescriptionChanged));
 
         public static readonly DependencyProperty ShowSearchBarProperty =
             DependencyProperty.Register(nameof(ShowSearchBar), typeof(bool), typeof(PropertyGrid),
@@ -52,6 +52,21 @@ namespace PropertyGridLib
                 new PropertyMetadata(true, OnShowCategoryHeadersChanged));
 
         /// <summary>
+        /// 是否显示顶部标题区（如「属性」）。false 时整块收起；与 Header 空值规则叠加
+        /// （Header 为空本来就不占高度）。与 PropertyGridPro.ShowHeader 同名同语义。
+        /// </summary>
+        public static readonly DependencyProperty ShowHeaderProperty =
+            DependencyProperty.Register(nameof(ShowHeader), typeof(bool), typeof(PropertyGrid),
+                new PropertyMetadata(true, OnShowHeaderChanged));
+
+        /// <summary>是否显示顶部标题区（默认显示）。</summary>
+        public bool ShowHeader
+        {
+            get => (bool)GetValue(ShowHeaderProperty);
+            set => SetValue(ShowHeaderProperty, value);
+        }
+
+        /// <summary>
         /// 顶部标题（如「属性」）。为空时不占任何高度 ——
         /// 宿主把它当纯控件用时（嵌在别处的面板里）不需要额外标题。
         /// </summary>
@@ -59,7 +74,7 @@ namespace PropertyGridLib
             DependencyProperty.Register(nameof(Header), typeof(string), typeof(PropertyGrid),
                 // 默认就叫「属性」：标题就是"属性"这件事本身的默认值，
                 // 宿主有特殊语境（如「项目属性」「参数」）再覆盖；设成空串可完全隐藏。
-                new PropertyMetadata("属性"));
+                new PropertyMetadata("属性", OnHeaderChanged));
 
         public static readonly DependencyProperty SelectedPropertyItemProperty =
             DependencyProperty.Register(nameof(SelectedPropertyItem), typeof(IPropertyItem), typeof(PropertyGrid),
@@ -83,9 +98,9 @@ namespace PropertyGridLib
 
         public static readonly DependencyProperty ShowTypeHintProperty =
             DependencyProperty.Register(nameof(ShowTypeHint), typeof(bool), typeof(PropertyGrid),
-                // 默认关闭：紧凑行（尤其 Small 布局，行高 34）里 "(int)/(Double)" 这类提示
-                // 会被挤到 ⇄ 与 ✕ 之间，看起来像多出来一个控件。需要时宿主显式打开。
-                new PropertyMetadata(false));
+                // 默认开启：绑定公式后输入框旁直接标注 "(int)" 这类目标类型，选绑定源时一眼对上号。
+                // 嫌挤的宿主可显式设为 false。
+                new PropertyMetadata(true));
 
         // ===== 网格级只读：所有条目（含懒加载的子属性）强制只读，编辑器变只读、重置禁用 =====
 
@@ -358,6 +373,14 @@ namespace PropertyGridLib
         private int _flatRowCount;
         private TextBlock _descriptionText;
         private TextBlock _descriptionTitle;
+        private FrameworkElement _descriptionBar;
+        private FrameworkElement _descriptionSplitter;
+        private FrameworkElement _headerTitle;
+        private RowDefinition _descriptionRow;      // 描述栏行（固定 80 可拖）：隐藏时压 0，否则内容收了行高不收、底部留空白
+        private GridLength _descRowSavedHeight;
+        private double _descRowSavedMin;
+        private double _descRowSavedMax;
+        private bool _descRowCollapsed;
         private TextBox _searchBox;
         private List<IPropertyItem> _allProperties;
         private IPropertyItem _selectedProperty;
@@ -507,9 +530,16 @@ namespace PropertyGridLib
             _itemsControl = GetTemplateChild("PART_ItemsControl") as ItemsControl;
             _descriptionText = GetTemplateChild("PART_DescriptionText") as TextBlock;
             _descriptionTitle = GetTemplateChild("PART_DescriptionTitle") as TextBlock;
+            _descriptionBar = GetTemplateChild("PART_DescriptionBar") as FrameworkElement;
+            _descriptionSplitter = GetTemplateChild("PART_DescriptionSplitter") as FrameworkElement;
+            _headerTitle = GetTemplateChild("PART_HeaderTitle") as FrameworkElement;
+            _descriptionRow = GetTemplateChild("PART_DescriptionRow") as RowDefinition;
+            ApplyHeader();
+            ApplyDescriptionBar();
             _searchBox = GetTemplateChild("PART_SearchBox") as TextBox;
             _collectionEditorHost = GetTemplateChild("PART_CollectionEditorHost") as ContentControl;
             _normalHost = GetTemplateChild("PART_NormalHost") as FrameworkElement;
+            ApplyDescriptionBar();
 
             // 1.4.0：事件页部件（模板未提供时不影响旧模板/旧宿主）
             _eventPicker = GetTemplateChild("PART_EventPicker") as EventPicker;
@@ -663,6 +693,84 @@ namespace PropertyGridLib
             {
                 _descriptionText.Visibility = Visibility.Collapsed;
                 _descriptionTitle.Visibility = Visibility.Collapsed;
+            }
+
+            ApplyDescriptionBar();
+        }
+
+        /// <summary>
+        /// ShowDescription 变化 → 立即重算描述栏/分割条显隐。
+        /// 打开时若没有选中项，先走一遍 ApplyFilter —— 它内部的"自动选中第一个属性行"
+        /// 只在 ShowDescription=true 时生效；勾选回调不会刷新列表，不补这一步就会出现
+        /// "勾了显示描述栏、栏是空的"（demo 实测：先关再开普通版不显示）。
+        /// </summary>
+        private static void OnShowDescriptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is PropertyGrid grid)
+            {
+                if ((bool)e.NewValue && grid.SelectedPropertyItem == null)
+                    grid.ApplyFilter();
+                grid.ApplyDescriptionBar();
+            }
+        }
+
+        private static void OnShowHeaderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is PropertyGrid grid) grid.ApplyHeader();
+        }
+
+        private static void OnHeaderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is PropertyGrid grid) grid.ApplyHeader();
+        }
+
+        /// <summary>
+        /// 顶部标题区显隐 = ShowHeader && Header 非空（cs 接管，每次状态变化重算本地值，
+        /// 覆盖模板里"Header 空则隐藏"的触发器——两者语义叠加而非竞争）。
+        /// </summary>
+        private void ApplyHeader()
+        {
+            if (_headerTitle == null) return;
+            _headerTitle.Visibility = ShowHeader && !string.IsNullOrEmpty(Header)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        /// <summary>
+        /// 底部描述栏 + 拖拽分割条的显隐总开关：
+        /// ShowDescription=false 时整块收起（连分割条一起），并把<b>固定高度的描述行压到 0</b> ——
+        /// RowDefinition Height="80" 不随内容收缩，只 Collapsed 内容会底部留一条空白；
+        /// true 时恢复记忆的行高（首次隐藏前记下，之后显示/隐藏来回切不丢用户拖拽过的尺寸）。
+        /// 直接写本地值覆盖模板绑定 —— 每次状态变化都会重算，不依赖绑定。
+        /// </summary>
+        private void ApplyDescriptionBar()
+        {
+            var vis = ShowDescription && SelectedPropertyItem != null
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+            if (_descriptionBar != null) _descriptionBar.Visibility = vis;
+            if (_descriptionSplitter != null) _descriptionSplitter.Visibility = vis;
+
+            if (_descriptionRow == null) return;
+            if (vis == Visibility.Collapsed)
+            {
+                if (!_descRowCollapsed)
+                {
+                    _descRowSavedHeight = _descriptionRow.Height;
+                    _descRowSavedMin = _descriptionRow.MinHeight;
+                    _descRowSavedMax = _descriptionRow.MaxHeight;
+                    _descRowCollapsed = true;
+                }
+                _descriptionRow.Height = new GridLength(0);
+                _descriptionRow.MinHeight = 0;
+                _descriptionRow.MaxHeight = 0;
+            }
+            else if (_descRowCollapsed)
+            {
+                _descriptionRow.Height = _descRowSavedHeight;
+                _descriptionRow.MinHeight = _descRowSavedMin;
+                _descriptionRow.MaxHeight = _descRowSavedMax;
+                _descRowCollapsed = false;
             }
         }
 
@@ -990,6 +1098,16 @@ namespace PropertyGridLib
             _flatRows = BuildFlatRows(categories, ShowCategoryHeaders);
             _flatRowCount = _flatRows.Count;
 
+            // 行数自适应虚拟化：少行（<40）关掉让布局精确 ——
+            // 虚拟化按平均行高估算 Extent，图片预览行（~200）混在文字行（~56）里
+            // 估算偏大时，滚动条 Auto 照常出现且拖到底留一大片空白；
+            // 几十行全量生成开销可忽略，大列表仍走虚拟化。
+            if (_itemsControl != null)
+            {
+                var virtualize = EnableVirtualization && _flatRows.Count > 40;
+                VirtualizingPanel.SetIsVirtualizing(_itemsControl, virtualize);
+            }
+
             // 项滚动（CanContentScroll=True）虚拟化依赖"平均行高估算"决定滚动度量：
             // 面板首次布局用预测容器（无内容 ≈2px）估算，会把 95 行全部算进视口 → Scrollable=0 → 无滚动条。
             // 预热：先只放一行并强制布局，让 VirtualizingStackPanel 学到真实行高（56），滚动度量随即正确。
@@ -1144,6 +1262,8 @@ namespace PropertyGridLib
                 // 只是不再往行集合里插"类别头"这一项 —— 视觉上就是全部属性平铺往下排。
                 if (includeCategoryHeaders)
                 {
+                    // 分类之间的"缝"：非首个分类标记画分隔线（首个上方是页头/标题留白）
+                    category.ShowGroupSeparator = !firstGroup;
                     rows.Add(category);
                     if (!category.IsExpanded) continue;
                 }
@@ -1151,16 +1271,21 @@ namespace PropertyGridLib
                 var lastItem = category.Items.Count > 0 ? category.Items[category.Items.Count - 1] as PropertyItem : null;
                 foreach (var item in category.Items)
                 {
-                    // markGroupFirst：分类名改由"分组首行"自己渲染（表单式），
-                    // 这样分类名与第一条属性天然同一行，不会多出一个独占一行的分类头行。
                     if (item is PropertyItem pi)
                     {
-                        pi.IsGroupFirst = markGroupFirst && isFirstOfGroup;
+                        // 组首行标记两种布局都需要：
+                        //  - 普通/紧凑列表：行模板据此给卡片补上边框 + 上圆角
+                        //    （无分类头平铺时首行直接顶在标题下，不补就是直角）；
+                        //  - 表单式：分类名由首行左列渲染（markGroupFirst）。
+                        // 之前只在 markGroupFirst 时赋值，普通版恒 false → 上圆角永不生效。
+                        pi.IsGroupFirst = isFirstOfGroup;
                         // 分类"卡片"的收口：每组最后一行画下圆角
                         pi.IsGroupLast = ReferenceEquals(pi, lastItem);
-                        // 分类之间的横向分隔线：只在分组首行、且不是第一个分组时画
-                        //（第一个分组上方已经有页头自带的分隔线）
-                        pi.ShowGroupSeparator = markGroupFirst && isFirstOfGroup && !firstGroup;
+                        // 分类分隔线：每个分组首行都画（含第一个分组）——
+                        // 线的实际位置在「分类名下方、该组第一行卡片上方」，
+                        // 第一个分类也该有，否则视觉上第一个分类头像是"没打完"（demo 反馈）。
+                        // 不再限定 markGroupFirst：不显示分类头时同样需要这条蓝线分隔各组。
+                        pi.ShowGroupSeparator = isFirstOfGroup;
                     }
                     isFirstOfGroup = false;
                     AppendItemRecursive(rows, item, 0);

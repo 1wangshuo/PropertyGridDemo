@@ -152,6 +152,13 @@ namespace PropertyGridLib.Controls
         }
         private string _category;
 
+        /// <summary>排序用基准显示名（特性原文，不随语言变化）——语言切换只换显示，不换顺序。</summary>
+        public string SortDisplayName => _baseDisplayName ?? DisplayName;
+        /// <summary>排序用基准分类名（特性原文，不随语言变化）。</summary>
+        public string SortCategory => _baseCategory ?? Category;
+        private string _baseDisplayName;
+        private string _baseCategory;
+
         /// <summary>描述（[Description] 特性指定，支持 IPropertyLocalization 动态变更）</summary>
         public string Description
         {
@@ -1778,6 +1785,9 @@ namespace PropertyGridLib.Controls
         /// <summary>更新本地化名称、描述和分类（检查 IPropertyLocalization 接口）</summary>
         private void UpdateLocalizedNames()
         {
+            // 首次调用记下基准名（特性原文）：排序永远用基准名，语言切换不影响顺序
+            _baseDisplayName ??= GetAttribute<DisplayNameAttribute>()?.DisplayName ?? _propertyInfo.Name;
+            _baseCategory ??= GetAttribute<CategoryAttribute>()?.Category ?? _propertyInfo.Name;
             // 取词链（四级）：模型接口动态文本 → 特性原文经 TextResolver 翻译 → 宿主注册的属性名翻译表 → 原样兜底
             var localizable = _owner as IPropertyLocalization;
 

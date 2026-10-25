@@ -1,5 +1,29 @@
 # 更新记录
 
+## 1.7.0
+
+### 新增
+
+- **独立编辑器控件**：集合、字典、事件三个编辑器可脱离 `PropertyGrid` 单独使用，宿主直接给 `Items` / `Dictionary` / `HandlerName` 赋值即可。
+- **`CollectionEditorControl.Compact` / `DictionaryEditorControl.Compact`**：紧凑形态只占一行（值框 + `...`），点 `...` 打开编辑弹窗。
+- **`EventEditorControl` 独立用法**：`HandlerName` / `IsBound` / `IsReadOnly` / `Placeholder` 四个依赖属性，请求编辑经 `RequestEditEvent` 路由事件抛出。
+- **`PropertyGrid.ShowHeader`**：顶部标题区开关；`PropertyGridPro.ShowHeader` 同名同语义。
+- **`PropertyGridPro.ShowDescription`**：底部描述栏开关。
+- **`PropertyCategory.ShowGroupSeparator`**：分类头顶部画主题色细线，与 Section 布局的行分隔线同一套观感。
+
+### 改进
+
+- 属性排序改用特性原文作基准（`SortCategory` / `SortDisplayName`）：本地化只换显示、不换顺序，切换语言排列不变。
+- **`PropertyGridPro.EnableVirtualization` 默认改为关闭**：Pro 行高差异大（图片预览行约 200、纯文字行约 90），平均行高估算会让滚动条忽大忽小、底部留白。行数少于 `VirtualizationRowThreshold`（150）时一律全量生成。
+- 事件列表虚拟化按行数自适应，修掉滚动到底残留大片空白。
+- 基础网格公式绑定默认显示目标类型提示（`(int)` 之类），嫌挤可显式关闭。
+- 描述栏隐藏时整行压 0，不在底部留空条。
+
+### 修复
+
+- 普通版 `ShowDescription` 先关再开后描述栏不显示（缺一次选中项重算）。
+- 分类头分隔线在窄面板下压到分类标题。
+
 ## 1.6.5
 
 ### 新增

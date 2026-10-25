@@ -10,9 +10,9 @@
     
     <!-- NuGet 包配置 -->
     <PackageId>PropertyGridLib</PackageId>
-    <Version>1.6.5</Version>
-    <AssemblyVersion>1.6.5.0</AssemblyVersion>
-    <FileVersion>1.6.5.0</FileVersion>
+    <Version>1.7.0</Version>
+    <AssemblyVersion>1.7.0.0</AssemblyVersion>
+    <FileVersion>1.7.0.0</FileVersion>
     <Authors>WangShuo</Authors>
     <Company>WangShuo</Company>
     <Product>PropertyGridLib</Product>
@@ -20,15 +20,17 @@
     <Trademark>WangShuo</Trademark>
     <Description>WPF 属性网格控件库（基于 HandyControl）。PropertyGrid 提供经典两栏与紧凑单行两种排布、分类卡片、搜索与多语言；PropertyGridPro 提供卡片式与选项页表单式排布。内置集合/字典/公式绑定/颜色/图片/链接等编辑器，支持 [Highlight] 关键属性标记与 [EditorChrome] 编辑器装饰开关。适用于 .NET Framework 4.8 与 .NET 6/7/8/10 (Windows)。</Description>
     <PackageTags>WPF;PropertyGrid;PropertyGridPro;Editor;Controls;Button;Dictionary;Collection;Formula;MultiSelect;ToggleSwitch;Localization;EventPicker;Events;HandyControl;TypeConverter;NETCoreApp3;NET6;NET7;NET8;NET10</PackageTags>
-    <PackageReleaseNotes>1.6.5
-· 分类改为卡片式（基础网格、事件页与 Pro 统一），标题跟随主题色
-· Pro 新增表单式排布（Layout=Section）与底部描述区（可拖动分隔条调整高度）
-· 新增链接自动识别：字符串值为 http/https/ftp/mailto 时渲染为可点击文本
-· 新增 [Highlight] 关键属性标记：基础网格圆点 / 表单式竖线 / 卡片描边
-· 新增 [EditorChrome] 编辑器装饰开关：隐藏或改名重置按钮、单独控制类型提示
-· 新增图片预览编辑器，支持 ImageSource、图像文件字节流与自定义图像类型（如 GenImage）
-· 支持隐藏搜索框、展开折叠按钮与分类头（ShowSearchBar / ShowExpandCollapse / ShowCategoryHeaders）
-· 同类型切换 SelectedObject 改为原地换绑，重建耗时由 250ms 级降至个位数毫秒</PackageReleaseNotes>
+    <PackageReleaseNotes>1.7.0
+· 集合 / 字典 / 事件三个编辑器控件可脱离 PropertyGrid 独立使用
+· 集合与字典编辑器新增 Compact 紧凑形态：只占一行，点 ... 打开弹窗
+· 事件编辑器独立用法的 HandlerName / IsBound / IsReadOnly / Placeholder 四个依赖属性
+· 基础网格新增 ShowHeader 开关（顶部标题区）
+· PropertyGridPro 新增 ShowDescription 开关；基础网格 ShowDescription 改为可运行时切换
+· 分类头新增主题色细线分隔（ShowGroupSeparator）
+· 属性排序改用特性原文作基准，切换语言不改变排列顺序
+· Pro 版虚拟化默认关闭：行高差异大时估算会让滚动条抖动、底部留白
+· 虚拟化按行数自适应（阈值 150），事件列表不再底部留大片空白
+· 基础网格公式绑定默认显示目标类型提示</PackageReleaseNotes>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/1wangshuo/PropertyGridDemo</PackageProjectUrl>
@@ -40,7 +42,7 @@
          包会落到 PropertyGridLib\nuget\ 造成「两个地方都有包、分不清哪个最新」。
          这里以工程文件位置为准推导，任何方式打包都输出到同一目录。 -->
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\nuget\</PackageOutputPath>
-    <InformationalVersion>1.6.5</InformationalVersion>
+    <InformationalVersion>1.7.0</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

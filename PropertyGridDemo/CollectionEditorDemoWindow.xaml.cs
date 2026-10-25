@@ -58,6 +58,39 @@ namespace PropertyGridDemo
             set { _sdkSwitchFormula = value; OnPropertyChanged(); }
         }
 
+        // ===== 独立控件演示：EventEditorControl / CollectionEditorControl / DictionaryEditorControl =====
+
+        private string _sdkHandlerName = "";
+        /// <summary>事件编辑器独立用法：处理方法名（与 EventEditorControl.HandlerName 双向）</summary>
+        public string SdkHandlerName
+        {
+            get => _sdkHandlerName;
+            set
+            {
+                if (_sdkHandlerName == value) return;
+                _sdkHandlerName = value;
+                OnPropertyChanged();
+            }
+        }
+
+        /// <summary>集合编辑器独立用法：宿主自己的集合，控件直接编辑它</summary>
+        public System.Collections.ObjectModel.ObservableCollection<string> DemoCollection { get; }
+            = new System.Collections.ObjectModel.ObservableCollection<string> { "张三", "李四", "王五" };
+
+        /// <summary>字典编辑器独立用法：宿主自己的字典</summary>
+        public Dictionary<string, int> DemoDictionary { get; }
+            = new Dictionary<string, int> { { "波特率", 115200 }, { "数据位", 8 }, { "重试次数", 3 } };
+
+        /// <summary>集合当前内容摘要（演示控件直接改宿主集合）</summary>
+        public string DemoCollectionSummary
+        {
+            get
+            {
+                var items = DemoCollection;
+                return items.Count == 0 ? "（空）" : $"[{items.Count} 项] " + string.Join("、", items);
+            }
+        }
+
         public CollectionEditorDemoWindow()
         {
             DirectTreeNodes = new List<FormulaTreeNode>

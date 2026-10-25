@@ -23,6 +23,48 @@ namespace PropertyGridLib.Controls
             set => SetValue(ItemsProperty, value);
         }
 
+        /// <summary>
+        /// 紧凑形态：true = 只显示一条「值框 + ...」（点 ... 打开集合编辑器弹窗）；
+        /// false（默认）= 当前完整内联编辑面板。独立使用时占一行高度就设 Compact="True"。
+        /// </summary>
+        public static readonly DependencyProperty CompactProperty =
+            DependencyProperty.Register(nameof(Compact), typeof(bool), typeof(CollectionEditorControl),
+                new PropertyMetadata(false, (d, e) => ((CollectionEditorControl)d).ApplyCompact()));
+
+        /// <summary>紧凑形态</summary>
+        public bool Compact
+        {
+            get => (bool)GetValue(CompactProperty);
+            set => SetValue(CompactProperty, value);
+        }
+
+        private void ApplyCompact()
+        {
+            if (PanelHost == null || CompactBar == null) return;
+            PanelHost.Visibility = Compact ? Visibility.Collapsed : Visibility.Visible;
+            CompactBar.Visibility = Compact ? Visibility.Visible : Visibility.Collapsed;
+            UpdateCompactSummary();
+        }
+
+        private void UpdateCompactSummary()
+        {
+            if (CompactSummary == null) return;
+            var n = Items?.Count ?? 0;
+            CompactSummary.Text = n == 0 ? "（空集合）" : $"[{n} 项]";
+        }
+
+        /// <summary>紧凑形态的「...」：打开集合编辑器弹窗（与网格行同款对话框），关闭后刷新摘要</summary>
+        private void CompactEdit_Click(object sender, RoutedEventArgs e)
+        {
+            if (Items == null) return;
+            var dlg = new Dialogs.CollectionEditorDialog(Items);
+            var owner = Window.GetWindow(this);
+            if (owner != null) dlg.Owner = owner;
+            dlg.ShowDialog();
+            LoadItems();
+            UpdateCompactSummary();
+        }
+
         public CollectionEditorControl()
         {
             InitializeComponent();
@@ -39,6 +81,7 @@ namespace PropertyGridLib.Controls
 
         private void LoadItems()
         {
+            ApplyCompact();
             var collection = Items;
             if (collection == null)
             {
@@ -46,6 +89,7 @@ namespace PropertyGridLib.Controls
                 _itemType = null;
                 ItemsListBox.ItemsSource = null;
                 ItemPropertyGrid.SelectedObject = null;
+                UpdateCompactSummary();
                 return;
             }
 

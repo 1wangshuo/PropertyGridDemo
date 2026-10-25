@@ -17,6 +17,12 @@ namespace PropertyGridLib.Controls
         /// <summary>分类</summary>
         string Category { get; }
 
+        /// <summary>排序用基准分类名（特性原文，不随语言变化）</summary>
+        string SortCategory { get; }
+
+        /// <summary>排序用基准显示名（特性原文，不随语言变化）</summary>
+        string SortDisplayName { get; }
+
         /// <summary>描述</summary>
         string Description { get; }
 

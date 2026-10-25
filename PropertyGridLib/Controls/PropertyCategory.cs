@@ -27,8 +27,9 @@ namespace PropertyGridLib.Controls
                 .Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
                 .Select(p => new PropertyItem(p, obj, maxDepth, currentDepth))
                 .Where(p => p.IsBrowsable)
-                .OrderBy(p => p.Category, NaturalStringComparer.Instance)
-                .ThenBy(p => p.DisplayName, NaturalStringComparer.Instance)
+                // 排序用基准名（特性原文）：本地化只换显示，不换顺序，多语言下顺序一致
+                .OrderBy(p => p.SortCategory, NaturalStringComparer.Instance)
+                .ThenBy(p => p.SortDisplayName, NaturalStringComparer.Instance)
                 .ThenBy(p => p.Name, NaturalStringComparer.Instance)
                 .ToList();
         }
@@ -42,8 +43,9 @@ namespace PropertyGridLib.Controls
             return items
                 .GroupBy(p => p.Category)
                 .Select(g => new PropertyCategory(g.Key, g.ToList()))
+                // 分类组顺序与行排序同一把尺（基准分类名），多语言下组顺序一致
                 .OrderBy(c => IsMiscCategory(c.Name) ? 1 : 0)   // 杂项/其他 排最后
-                .ThenBy(c => c.Name, NaturalStringComparer.Instance)
+                .ThenBy(c => c.Items.Count > 0 ? c.Items[0].SortCategory : c.Name, NaturalStringComparer.Instance)
                 .ToList();
         }
 
@@ -88,6 +90,24 @@ namespace PropertyGridLib.Controls
                 if (_isExpanded == value) return;
                 _isExpanded = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
+            }
+        }
+
+        private bool _showGroupSeparator;
+
+        /// <summary>
+        /// 分类之间是否画横向分隔线（非首个分类为 true，由压平逻辑 BuildFlatRows 写入）。
+        /// Card 布局的分类头模板据此在顶部画一条主题色细线 ——
+        /// 让相邻分类之间有"缝"，与 Section 布局的行分隔线同一套观感。
+        /// </summary>
+        public bool ShowGroupSeparator
+        {
+            get => _showGroupSeparator;
+            internal set
+            {
+                if (_showGroupSeparator == value) return;
+                _showGroupSeparator = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(ShowGroupSeparator)));
             }
         }
 

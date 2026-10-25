@@ -249,6 +249,15 @@ namespace PropertyGridLib.Controls
 
             double offset = _scrollViewer?.VerticalOffset ?? 0;
 
+            // 行数自适应虚拟化（与 PropertyGridPro 同一策略）：行数不到阈值就全量生成。
+            // 虚拟化按平均行高估算 Extent，事件行高差异（有无已绑定标记、长说明换行）
+            // 会让估算虚大 —— 表现是滚到底后底部还留一大片空白（demo 实测 111 行）。
+            if (_itemsControl != null)
+            {
+                var virtualize = rows.Count > PropertyGridPro.VirtualizationRowThreshold;
+                VirtualizingPanel.SetIsVirtualizing(_itemsControl, virtualize);
+            }
+
             if (offset <= 0 && rows.Count > 0)
             {
                 _itemsControl.ItemsSource = new object[] { rows[0] };

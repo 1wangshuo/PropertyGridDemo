@@ -35,7 +35,62 @@
                       Color="Black"/>
     
 
-    
+    <!-- ═══════════ 稳定滚动条（属性列表专用）═══════════
+         HandyControl 默认滚动条是"平时细线、hover 变粗块"的两态样式 ——
+         滚动时观感像拇指忽大忽小、判断不了内容有多长（demo 反复反馈）。
+         这里换一套稳定样式：拇指常显（半透明灰 6px 圆角条），hover 只变主题色，
+         粗细与尺寸不变。只覆盖纵向（属性列表不出现横向滚动条，横向保留默认样式）。 -->
+    <Style x:Key="StableScrollBar" TargetType="ScrollBar">
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Vertical">
+                <Setter Property="Width" Value="12"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid Background="Transparent">
+                                <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                    <Track.Thumb>
+                                        <Thumb>
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border x:Name="ThumbBar"
+                                                            Width="6" CornerRadius="3" Margin="0,3"
+                                                            Background="{DynamicResource SecondaryTextBrush}"
+                                                            Opacity="0.35"/>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="ThumbBar" Property="Background"
+                                                                    Value="{DynamicResource PrimaryBrush}"/>
+                                                            <Setter TargetName="ThumbBar" Property="Opacity" Value="1"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsDragging" Value="True">
+                                                            <Setter TargetName="ThumbBar" Property="Background"
+                                                                    Value="{DynamicResource PrimaryBrush}"/>
+                                                            <Setter TargetName="ThumbBar" Property="Opacity" Value="1"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                    <Track.DecreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False"
+                                                      Opacity="0" Background="Transparent"/>
+                                    </Track.DecreaseRepeatButton>
+                                    <Track.IncreaseRepeatButton>
+                                        <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False"
+                                                      Opacity="0" Background="Transparent"/>
+                                    </Track.IncreaseRepeatButton>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- ========== 圆角图标按钮样式（透明背景 + 悬停圆角高亮 + 主题前景色） ========== -->
     <Style x:Key="IconToggleButtonStyle" TargetType="ToggleButton">
         <Setter Property="Background" Value="Transparent"/>
@@ -123,22 +178,16 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="{Binding Header}"/>
-            <!-- 类型提示(如 “(int)”)：宿主未填 FormulaType 时 TypeHint 为 null，不显示；
-                 PropertyGrid.ShowTypeHint 开关关闭时也不显示 -->
+            <!-- 类型提示(如 “(int)”)：宿主未填 FormulaType 时 TypeHint 为 null，不显示。
+                 绑定源树里不受 ShowTypeHint 开关控制 —— 选绑定源时类型一眼有用，
+                 行内公式条上的提示才受那个开关管（那里挤）。 -->
             <!-- 类型提示用主题强调色（斜体）：与关键属性竖线、绑定图标同一色系 -->
             <TextBlock Grid.Column="2" Text="{Binding TypeHint}"
                        Margin="6,0,0,0"
                        FontStyle="Italic"
                        Opacity="0.85"
-                       Foreground="{DynamicResource PrimaryBrush}">
-                <TextBlock.Visibility>
-                    <MultiBinding Converter="{StaticResource AndVis}">
-                        <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
-                        <Binding Path="ShowTypeHint" RelativeSource="{RelativeSource AncestorType=pg:PropertyGrid}"
-                                 Converter="{StaticResource BoolToVis}"/>
-                    </MultiBinding>
-                </TextBlock.Visibility>
-            </TextBlock>
+                       Foreground="{DynamicResource PrimaryBrush}"
+                       Visibility="{Binding TypeHint, Converter={StaticResource NullToVis}}"/>
         </Grid>
     </HierarchicalDataTemplate>
 
@@ -442,16 +491,26 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding ValueString}"
-                               Foreground="{DynamicResource PrimaryTextBrush}"
-                               VerticalAlignment="Center"/>
+                    <!-- 值框外观：与路径/文本编辑器一致（白底 + 圆角描边），显示项数摘要；
+                         点右侧「...」才打开集合编辑器（不再把编辑区内联展开）。 -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource RegionBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="4"
+                            Padding="8,0" MinHeight="30"
+                            SnapsToDevicePixels="True">
+                        <TextBlock Text="{Binding ValueString}"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Border>
                     <Button Grid.Column="1"
                             Content="..."
                             MinWidth="30"
                             Width="auto"
                             Margin="4,0,0,0"
-                            Command="{Binding EditCollectionCommand}"/>
+                            Command="{Binding EditCollectionCommand}"
+                            ToolTip="打开集合编辑器"/>
                 </Grid>
             </DataTemplate>
         </local:EditorTemplateSelector.CollectionTemplate>
@@ -464,16 +523,25 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding ValueString}"
-                               Foreground="{DynamicResource PrimaryTextBrush}"
-                               VerticalAlignment="Center"/>
+                    <!-- 值框外观与集合/路径编辑器一致；点「...」打开字典编辑器 -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource RegionBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1" CornerRadius="4"
+                            Padding="8,0" MinHeight="30"
+                            SnapsToDevicePixels="True">
+                        <TextBlock Text="{Binding ValueString}"
+                                   Foreground="{DynamicResource PrimaryTextBrush}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"/>
+                    </Border>
                     <Button Grid.Column="1"
                             Content="..."
                             MinWidth="30"
                             Width="auto"
                             Margin="4,0,0,0"
-                            Command="{Binding EditCollectionCommand}"/>
+                            Command="{Binding EditCollectionCommand}"
+                            ToolTip="打开字典编辑器"/>
                 </Grid>
             </DataTemplate>
         </local:EditorTemplateSelector.DictionaryTemplate>
@@ -1043,7 +1111,7 @@
                                    FontStyle="Italic"
                                    Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                    TextTrimming="CharacterEllipsis"
-                                   ToolTip="{Binding TypeHint}">
+                                   MaxWidth="120" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
                             <TextBlock.Visibility>
                                 <MultiBinding Converter="{StaticResource AndVis}">
                                     <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
@@ -1069,11 +1137,26 @@
         </Grid>
         </Border>
         <DataTemplate.Triggers>
+            <!-- 每组首行：补上边 + 上圆角（无分类头平铺模式下直接顶在标题下方，
+                 不补就是直角，观感被切断；有分类头时也是完整卡片，上边与标题留白衔接） -->
+            <DataTrigger Binding="{Binding IsGroupFirst}" Value="True">
+                <Setter TargetName="RowCard" Property="BorderThickness" Value="1,1,1,0"/>
+                <Setter TargetName="RowCard" Property="CornerRadius" Value="4,4,0,0"/>
+            </DataTrigger>
             <!-- 每组最后一行收口：补下边 + 下圆角，整组属性成为一张完整卡片 -->
             <DataTrigger Binding="{Binding IsGroupLast}" Value="True">
                 <Setter TargetName="RowCard" Property="BorderThickness" Value="1,0,1,1"/>
                 <Setter TargetName="RowCard" Property="CornerRadius" Value="0,0,4,4"/>
             </DataTrigger>
+            <!-- 单行组（既是首行又是末行）：四角圆角 + 完整边框（覆盖上面两条各自的半开形状） -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsGroupFirst}" Value="True"/>
+                    <Condition Binding="{Binding IsGroupLast}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="RowCard" Property="BorderThickness" Value="1"/>
+                <Setter TargetName="RowCard" Property="CornerRadius" Value="4"/>
+            </MultiDataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
 
@@ -1194,7 +1277,7 @@
                                    FontStyle="Italic"
                                    Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                    TextTrimming="CharacterEllipsis"
-                                   ToolTip="{Binding TypeHint}">
+                                   MaxWidth="120" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
                             <TextBlock.Visibility>
                                 <MultiBinding Converter="{StaticResource AndVis}">
                                     <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
@@ -1220,11 +1303,25 @@
         </Grid>
         </Border>
         <DataTemplate.Triggers>
+            <!-- 每组首行：上边 + 上圆角（与末行收口对称，整组成为完整圆角卡片） -->
+            <DataTrigger Binding="{Binding IsGroupFirst}" Value="True">
+                <Setter TargetName="RowCard" Property="BorderThickness" Value="1,1,1,0"/>
+                <Setter TargetName="RowCard" Property="CornerRadius" Value="4,4,0,0"/>
+            </DataTrigger>
             <!-- 每组最后一行收口：下边 + 下圆角 -->
             <DataTrigger Binding="{Binding IsGroupLast}" Value="True">
                 <Setter TargetName="RowCard" Property="BorderThickness" Value="1,0,1,1"/>
                 <Setter TargetName="RowCard" Property="CornerRadius" Value="0,0,4,4"/>
             </DataTrigger>
+            <!-- 单行组：四角圆角 + 完整边框 -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsGroupFirst}" Value="True"/>
+                    <Condition Binding="{Binding IsGroupLast}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="RowCard" Property="BorderThickness" Value="1"/>
+                <Setter TargetName="RowCard" Property="CornerRadius" Value="4"/>
+            </MultiDataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
 
@@ -1277,14 +1374,16 @@
 
     <!-- 事件行：名称（上） + 行内编辑器（下） -->
     <DataTemplate x:Key="EventItemRowTemplate" DataType="{x:Type local:EventItem}">
-        <!-- 与属性页同款卡片：每行是卡片的一段（左右描边），末行（IsGroupLast）补下边与下圆角 -->
+        <!-- 与属性页同款卡片：每行是卡片的一段（左右描边），末行（IsGroupLast）补下边与下圆角。
+             底色必须和属性行一致用 SecondaryRegionBrush（浅灰）—— 之前用 RegionBrush（白），
+             白卡片浮在灰底上，观感与属性页相反，还被误认为"底部空了一块"。 -->
         <Border x:Name="EventRowCard"
-                Background="{DynamicResource RegionBrush}"
+                Background="{DynamicResource SecondaryRegionBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1,0,1,0"
-                Margin="6,0,6,0"
+                Margin="0"
                 SnapsToDevicePixels="True">
-        <Grid Margin="0,1" Background="Transparent">
+        <Grid Margin="0" Background="Transparent">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -1320,11 +1419,25 @@
         </Grid>
         </Border>
         <DataTemplate.Triggers>
+            <!-- 每组首行：上边 + 上圆角 -->
+            <DataTrigger Binding="{Binding IsGroupFirst}" Value="True">
+                <Setter TargetName="EventRowCard" Property="BorderThickness" Value="1,1,1,0"/>
+                <Setter TargetName="EventRowCard" Property="CornerRadius" Value="4,4,0,0"/>
+            </DataTrigger>
             <!-- 每组最后一行收口：补下边 + 下圆角，整组事件成为一张完整卡片 -->
             <DataTrigger Binding="{Binding IsGroupLast}" Value="True">
                 <Setter TargetName="EventRowCard" Property="BorderThickness" Value="1,0,1,1"/>
                 <Setter TargetName="EventRowCard" Property="CornerRadius" Value="0,0,4,4"/>
             </DataTrigger>
+            <!-- 单行组：四角圆角 + 完整边框 -->
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding IsGroupFirst}" Value="True"/>
+                    <Condition Binding="{Binding IsGroupLast}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter TargetName="EventRowCard" Property="BorderThickness" Value="1"/>
+                <Setter TargetName="EventRowCard" Property="CornerRadius" Value="4"/>
+            </MultiDataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
 
@@ -1352,25 +1465,58 @@
          分类头本身只是平铺列表中的一行 Expander，折叠状态经 TwoWay 绑定回 EventCategory.IsExpanded，
          由 EventPicker 重建一次平铺行；行内不嵌套任何内容，所以虚拟化不受影响）。 -->
     <DataTemplate x:Key="EventFlatCategoryHeaderTemplate">
-        <Expander x:Name="HeaderExpander"
-                  IsExpanded="{Binding IsExpanded, Mode=TwoWay}"
-                  Header="{Binding Name}"
-                  FontWeight="Bold"
-                  Foreground="{DynamicResource PrimaryBrush}"
-                  Background="Transparent"
-                  Margin="4,10,4,2">
-            <Expander.HeaderTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding}"
-                               FontWeight="Bold"
-                               FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=local:EventPicker}}"
-                               Foreground="{DynamicResource PrimaryBrush}"/>
-                </DataTemplate>
-            </Expander.HeaderTemplate>
-        </Expander>
+        <!-- 与属性页分类头同款外观：透明底 + 主题色竖条 + 蓝字，右侧一个折叠箭头。
+             之前用 HandyControl 的 Expander，它的模板自带灰底块和边框，
+             跟普通属性页的分类头完全不同层级感（demo 反馈"折叠容器用的不对"）。 -->
+        <ToggleButton x:Name="HeaderToggle"
+                      IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      Cursor="Hand"
+                      Focusable="False"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Stretch">
+            <ToggleButton.Template>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="HeaderRoot" Background="Transparent" Padding="4,9,4,3">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="3" Height="13" CornerRadius="2" Margin="0,0,8,0"
+                                        Background="{DynamicResource PrimaryBrush}"
+                                        VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding Name}"
+                                           FontWeight="Bold"
+                                           FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=local:EventPicker}}"
+                                           Foreground="{DynamicResource PrimaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <Path x:Name="Chevron" Grid.Column="1"
+                                  Data="M7,10 L12,5 L17,10"
+                                  Stroke="{DynamicResource SecondaryTextBrush}"
+                                  StrokeThickness="1.6"
+                                  Width="12" Height="8" Stretch="Uniform"
+                                  VerticalAlignment="Center"
+                                  WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="False">
+                            <Setter TargetName="Chevron" Property="Data" Value="M7,5 L12,10 L17,5"/>
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="HeaderRoot" Property="Background" Value="{DynamicResource ThirdlyRegionBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </ToggleButton.Template>
+        </ToggleButton>
         <DataTemplate.Triggers>
             <DataTrigger Binding="{Binding Name}" Value="">
-                <Setter TargetName="HeaderExpander" Property="Visibility" Value="Collapsed"/>
+                <Setter TargetName="HeaderToggle" Property="Visibility" Value="Collapsed"/>
             </DataTrigger>
         </DataTemplate.Triggers>
     </DataTemplate>
@@ -1388,7 +1534,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type local:EventPicker}">
-                    <Grid>
+                    <!-- 白底与属性页一致：以前控件本身透明，被外层灰底衬得像"整块反色" -->
+                    <Grid Background="{DynamicResource RegionBrush}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -1406,16 +1553,30 @@
                         <!-- 列表：ScrollViewer 必须放在 ItemsControl 自己的 ControlTemplate 内、
                              紧邻 ItemsPresenter —— 外置 ScrollViewer 包 ItemsControl 时 VSP 接管不了
                              IScrollInfo，会退化为像素滚动全量生成（实测 111/114 行全生成） -->
+                        <!-- IsVirtualizing 不在这里写死：由 EventPicker.RebuildRows 按行数自适应
+                             （少行全量精确布局，避免虚拟化估算虚大导致底部空白）。 -->
                         <ItemsControl Grid.Row="1" x:Name="PART_ItemsControl"
-                                      VirtualizingPanel.IsVirtualizing="True"
                                       VirtualizingPanel.VirtualizationMode="Recycling"
                                       ItemTemplateSelector="{StaticResource EventFlatRowTemplateSelector}">
+                            <!-- 项容器压掉默认间距：否则每行灰卡片之间会露出白缝，
+                                 普通属性页是连续灰底卡片，两者观感对不上（demo 对比反馈） -->
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="Margin" Value="0"/>
+                                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
                             <ItemsControl.Template>
                                 <ControlTemplate TargetType="ItemsControl">
+                                    <!-- 稳定滚动条（与属性列表同一套：拇指常显、hover 只变色） -->
                                     <ScrollViewer x:Name="PART_ScrollViewer"
                                                   CanContentScroll="True"
                                                   VerticalScrollBarVisibility="Auto"
-                                                  HorizontalScrollBarVisibility="Disabled">
+                                                  HorizontalScrollBarVisibility="Disabled"
+                                                  Padding="0,0,0,8">
+                                        <ScrollViewer.Resources>
+                                            <Style TargetType="ScrollBar" BasedOn="{StaticResource StableScrollBar}"/>
+                                        </ScrollViewer.Resources>
                                         <ItemsPresenter/>
                                     </ScrollViewer>
                                 </ControlTemplate>
@@ -1434,8 +1595,21 @@
                                 Background="{DynamicResource SecondaryRegionBrush}"
                                 BorderBrush="{DynamicResource BorderBrush}"
                                 BorderThickness="0,1,0,0"
-                                Padding="8,6"
-                                Visibility="{Binding SelectedEvent.HasDescription, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
+                                Padding="8,6">
+                            <!-- 默认 Collapsed，只有明确 True 才显示：
+                                 直接绑 HasDescription 时，初始 SelectedEvent=null 会让
+                                 绑定路径断开 → Visibility 保持默认值（Visible）→
+                                 一打开底部就多一条空灰条，点一下才消失（demo 实测）。 -->
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedEvent.HasDescription, RelativeSource={RelativeSource TemplatedParent}}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
                             <StackPanel>
                                 <TextBlock Text="{Binding SelectedEvent.DisplayName, RelativeSource={RelativeSource TemplatedParent}}"
                                            FontWeight="Bold"
@@ -1463,10 +1637,12 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
+                        <!-- 绑控件自身 DP（TemplatedParent）而非 DataContext：这样脱离 PropertyGrid/EventItem
+                             也能独立使用；网格内联时由 EventEditorControl.SyncFromItem 把 EventItem 值灌进 DP。 -->
                         <hc:TextBox x:Name="PART_HandlerNameBox" Grid.Column="0"
-                                    Text="{Binding HandlerName, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
-                                    hc:InfoElement.Placeholder="{loc:Localized NoHandler}"
-                                    IsReadOnly="{Binding IsReadOnly}"/>
+                                    Text="{Binding HandlerName, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
+                                    hc:InfoElement.Placeholder="{Binding Placeholder, RelativeSource={RelativeSource TemplatedParent}}"
+                                    IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"/>
                         <Button x:Name="PART_EditButton" Grid.Column="1"
                                 Width="20" Height="20" Padding="0" Margin="4,0,0,0"
                                 Content="⚡" FontSize="11"
@@ -1505,7 +1681,9 @@
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="80" MinHeight="40" MaxHeight="300"/>
+                                    <!-- 描述栏行：固定 80 可拖；ShowDescription=false 时 cs 把行高压 0，
+                                         否则内容 Collapsed 行高不动，底部留一条空白 -->
+                                    <RowDefinition x:Name="PART_DescriptionRow" Height="80" MinHeight="40" MaxHeight="300"/>
                                 </Grid.RowDefinitions>
 
                                 <!-- 展开/折叠 + 搜索框（属性页内部；事件页激活时随属性页折叠，功能不变）
@@ -1513,10 +1691,12 @@
                                      宿主只要纯属性表时可以把整行工具条都收掉。 -->
                                 <DockPanel Grid.Row="0" LastChildFill="True">
                                     <!-- 顶部标题（如「属性」）：Dock=Top 落在工具条上方；
-                                         Header 为空时整块 Collapsed，不占高度 -->
+                                         Header 为空时整块 Collapsed，不占高度；
+                                         ShowHeader=false 时由 cs 接管隐藏（PART_HeaderTitle） -->
                                     <TextBlock DockPanel.Dock="Top"
+                                               x:Name="PART_HeaderTitle"
                                                Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"
-                                               Margin="12,10,12,4"
+                                               Margin="12,8,12,2"
                                                FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=2}"
                                                FontWeight="Bold"
                                                Foreground="{DynamicResource PrimaryTextBrush}">
@@ -1552,8 +1732,10 @@
                                 </DockPanel>
 
                                 <!-- 属性列表 + 加载层（1.4.0：加载指示用静态文本代替 LoadingCircle ——
-                                     动画时钟在快速显隐的元素上持续 tick 是 clr 闪退的根源，静态化后无时钟无竞态） -->
-                                <Grid Grid.Row="1">
+                                     动画时钟在快速显隐的元素上持续 tick 是 clr 闪退的根源，静态化后无时钟无竞态）。
+                                     顶部 2px：无分类头时靠首行卡片自身的上边距/圆角留呼吸，
+                                     不再叠加 8px（有分类头时距离过大的反馈）。 -->
+                                <Grid Grid.Row="1" Margin="0,2,0,0">
                                     <!-- 虚拟化（Recycling）+ 项滚动（CanContentScroll=True）：只有项滚动下
                                          VirtualizingStackPanel 才真正虚拟化（只生成可见行，实测 Realized≈5，
                                          渲染 <30ms）。像素滚动（ScrollUnit=Pixel）虽滚动条精确，但 WPF 必须
@@ -1569,6 +1751,10 @@
                                                               CanContentScroll="True"
                                                               VerticalScrollBarVisibility="Auto"
                                                               HorizontalScrollBarVisibility="Disabled">
+                                                    <ScrollViewer.Resources>
+                                                        <!-- 稳定滚动条：拇指常显、hover 只变色（见 StableScrollBar） -->
+                                                        <Style TargetType="ScrollBar" BasedOn="{StaticResource StableScrollBar}"/>
+                                                    </ScrollViewer.Resources>
                                                     <ItemsPresenter/>
                                                 </ScrollViewer>
                                             </ControlTemplate>
@@ -1595,8 +1781,8 @@
                                                           FontWeight="{Binding CategoryFontWeight, RelativeSource={RelativeSource TemplatedParent}}"
                                                           Foreground="{DynamicResource PrimaryBrush}"
                                                           Background="Transparent"
-                                                          Margin="4,10,4,0"
-                                                          Padding="2,0,2,4">
+                                                          Margin="4,6,4,0"
+                                                          Padding="2,0,2,2">
                                                     <Expander.HeaderTemplate>
                                                         <DataTemplate>
                                                             <!-- 分类名用主题强调色：与关键属性竖线、链接同一色系 -->
@@ -1622,8 +1808,9 @@
                                     </Border>
                                 </Grid>
 
-                                <!-- 可拖拽分割条 -->
+                                <!-- 可拖拽分割条（ShowDescription=false 时随描述栏一起隐藏，由 cs 接管显隐） -->
                                 <GridSplitter Grid.Row="2"
+                                              x:Name="PART_DescriptionSplitter"
                                               Height="4"
                                               HorizontalAlignment="Stretch"
                                               Background="{DynamicResource BorderBrush}"
@@ -1633,6 +1820,7 @@
 
                                 <!-- 描述栏（可调节高度） -->
                                 <Border Grid.Row="3"
+                                        x:Name="PART_DescriptionBar"
                                         Background="{DynamicResource SecondaryRegionBrush}"
                                         BorderBrush="{DynamicResource BorderBrush}"
                                         BorderThickness="0,1,0,0"
@@ -1677,12 +1865,20 @@
          行与行之间不再使用 1px 分隔线，改由卡片底色 + 描边 + 留白区分。 -->
     <DataTemplate x:Key="ProPropertyRowTemplate">
         <StackPanel>
+            <!-- 分类之间的"缝"：主题色 1px 细线（组首行且非首组显示）。
+                 位置就在**分类头文本下方**（组首行卡片上方）——分类头模板本身不画线，
+                 全局只有这一处，不会出现"上下各一条"的重复（demo 反馈）。 -->
+            <Border Height="1"
+                    Margin="16,2,16,2"
+                    Background="{DynamicResource PrimaryBrush}"
+                    Opacity="0.5"
+                    Visibility="{Binding ShowGroupSeparator, Converter={StaticResource BoolToVis}}"/>
             <Border x:Name="ProRowRoot"
                     Background="{DynamicResource SecondaryRegionBrush}"
                     BorderBrush="{DynamicResource BorderBrush}"
                     BorderThickness="1"
                     CornerRadius="7"
-                    Padding="16,12,16,12"
+                    Padding="16,16,16,14"
                     Margin="{Binding ProRowMargin}"
                     SnapsToDevicePixels="True">
                 <StackPanel>
@@ -1761,7 +1957,10 @@
                              点绑定按钮后占据值编辑器列（原编辑器此时已隐藏，不需要底板遮挡）；
                              条内右侧自带收起按钮，再点收起。不占布局 → 卡片高度恒定。
                              背景透明：卡片自身有底色，铺一层白会在卡片里镶一块"白毯子"。 -->
+                        <!-- 宽度绑定 EditorWidth：值编辑器列是 Auto，普通编辑器靠固定 EditorWidth 撑宽，
+                             公式条若不绑同样宽度会缩成"内容自适应"的一小段（输入框只剩几十个像素）。 -->
                         <Border Grid.Column="1"
+                                Width="{Binding EditorWidth, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}}"
                                 Background="Transparent"
                                 Panel.ZIndex="10"
                                 Visibility="{Binding IsFormulaEditorOpen, Converter={StaticResource BoolToVis}}">
@@ -1788,7 +1987,7 @@
                                            FontStyle="Italic"
                                            Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                            TextTrimming="CharacterEllipsis"
-                                           ToolTip="{Binding TypeHint}">
+                                           MaxWidth="120" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
                                     <TextBlock.Visibility>
                                         <MultiBinding Converter="{StaticResource AndVis}">
                                             <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
@@ -1848,7 +2047,9 @@
 
     <!-- 分类头行：左列分类名，右列留空（竖线由下面的属性行自己画，从第一条属性开始） -->
     <DataTemplate x:Key="ProSectionCategoryHeaderTemplate">
-        <Grid x:Name="ProSectionHeader" Margin="16,34,16,2">
+        <!-- 上边距 34 → 12：分组之间的缝隙和普通版（分类头 10）对齐，
+             不至于一个图片行结束后往下留出一大段空白（demo 对比反馈） -->
+        <Grid x:Name="ProSectionHeader" Margin="16,12,16,2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="176"/>
                 <ColumnDefinition Width="*"/>
@@ -1876,14 +2077,14 @@
     <DataTemplate x:Key="ProSectionRowTemplate">
         <Grid>
             <!-- 分组首行顶部留 14 的呼吸（分类名与上方页头/上一组之间不再贴死），
-                 其余行只留行间距 24。Margin 放 Style 里而不是直接写属性 ——
-                 本地值会盖过 DataTrigger，写死了触发器就不生效了。 -->
+                 其余行留行间距 12（原 24→16→12：图片行底部堆积空白过多，与普通版观感差距大）。
+                 Margin 放 Style 里而不是直接写属性 —— 本地值会盖过 DataTrigger。 -->
             <Grid.Style>
                 <Style TargetType="Grid">
-                    <Setter Property="Margin" Value="16,0,16,24"/>
+                    <Setter Property="Margin" Value="16,0,16,12"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsGroupFirst}" Value="True">
-                            <Setter Property="Margin" Value="16,14,16,24"/>
+                            <Setter Property="Margin" Value="16,12,16,12"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -1896,8 +2097,11 @@
             </Grid.ColumnDefinitions>
             <!-- 分类之间的横向分隔线：主题边框色（深/浅主题都可见），
                  画在分组首行上方、且只有非首组才出现 -->
+            <!-- 分类分隔线（组首行显示）：画在分类名下方、该组第一行上方，全局只此一处。
+                 Margin 顶部 -4：从"分类头行内 15px 处"挪到首行卡片正上方，
+                 视觉上就是分类名下面那条线（此前画在分类名上方，第一个分类下面缺一条）。 -->
             <Border Grid.Column="0" Grid.ColumnSpan="2"
-                    Height="1" VerticalAlignment="Top" Margin="0,-15,0,0"
+                    Height="1" VerticalAlignment="Top" Margin="0,-4,0,0"
                     Background="{DynamicResource PrimaryBrush}" Opacity="0.35"
                     Visibility="{Binding ShowGroupSeparator, Converter={StaticResource BoolToVis}}"/>
 
@@ -2062,14 +2266,14 @@
     <DataTemplate x:Key="ProSectionCheckRowTemplate">
         <Grid>
             <!-- 分组首行顶部留 14 的呼吸（分类名与上方页头/上一组之间不再贴死），
-                 其余行只留行间距 24。Margin 放 Style 里而不是直接写属性 ——
-                 本地值会盖过 DataTrigger，写死了触发器就不生效了。 -->
+                 其余行留行间距 12（原 24→16→12：图片行底部堆积空白过多，与普通版观感差距大）。
+                 Margin 放 Style 里而不是直接写属性 —— 本地值会盖过 DataTrigger。 -->
             <Grid.Style>
                 <Style TargetType="Grid">
-                    <Setter Property="Margin" Value="16,0,16,24"/>
+                    <Setter Property="Margin" Value="16,0,16,12"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsGroupFirst}" Value="True">
-                            <Setter Property="Margin" Value="16,14,16,24"/>
+                            <Setter Property="Margin" Value="16,12,16,12"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
@@ -2078,8 +2282,11 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            <!-- 分类分隔线（组首行显示）：画在分类名下方、该组第一行上方，全局只此一处。
+                 Margin 顶部 -4：从"分类头行内 15px 处"挪到首行卡片正上方，
+                 视觉上就是分类名下面那条线（此前画在分类名上方，第一个分类下面缺一条）。 -->
             <Border Grid.Column="0" Grid.ColumnSpan="2"
-                    Height="1" VerticalAlignment="Top" Margin="0,-15,0,0"
+                    Height="1" VerticalAlignment="Top" Margin="0,-4,0,0"
                     Background="{DynamicResource PrimaryBrush}" Opacity="0.35"
                     Visibility="{Binding ShowGroupSeparator, Converter={StaticResource BoolToVis}}"/>
 
@@ -2146,6 +2353,8 @@
     </DataTemplate>
 
     <DataTemplate x:Key="ProFlatCategoryHeaderTemplate">
+        <!-- 分类头只负责标题，不画分隔线 —— 分隔线统一由行模板画在分类头下方（只此一处），
+             否则分类头上下会各出一条（demo 反馈"多出来一个分类线"）。 -->
         <StackPanel x:Name="ProFlatCategoryHeader"
                     Orientation="Horizontal"
                     Margin="16,14,16,6">
@@ -2217,15 +2426,16 @@
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
-                                <!-- 底部常驻描述区 + 可上下拖动的分隔条（与基础网格一致） -->
-                                <RowDefinition Height="4"/>
-                                <RowDefinition Height="80" MinHeight="40" MaxHeight="300"/>
+                                <!-- 底部常驻描述区 + 可上下拖动的分隔条（与基础网格一致）；
+                                     ShowDescription=false 时 cs 把两行行高压 0（固定行不随内容收缩，会留空白） -->
+                                <RowDefinition x:Name="PART_ProSplitterRow" Height="4"/>
+                                <RowDefinition x:Name="PART_ProDescriptionRow" Height="80" MinHeight="40" MaxHeight="300"/>
                             </Grid.RowDefinitions>
 
                             <!-- 头部：标题 + 说明 + 来源 + 搜索框 -->
                             <StackPanel Grid.Row="0">
                                 <StackPanel x:Name="PART_HeaderPanel"
-                                            Margin="16,14,16,0"
+                                            Margin="16,14,16,18"
                                             Visibility="{Binding ShowHeader, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
                                     <TextBlock x:Name="PART_HeaderText"
                                                Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"
@@ -2274,8 +2484,9 @@
                                  VirtualizingStackPanel + Recycling 只生成视口内的卡片
                                  （此前 StackPanel 全量生成 77+ 张卡片，实测每次重建 672ms，
                                  展开/筛选重建瞬间卡顿）。滚动估算由代码侧"首行预热"修正
-                                 （见 PropertyGridPro.ApplyFilter，与基类同款）。 -->
-                            <Grid Grid.Row="1">
+                                 （见 PropertyGridPro.ApplyFilter，与基类同款）。
+                                 顶部 8px 留白：无标题区时首行不贴控件顶边。 -->
+                            <Grid Grid.Row="1" Margin="0,8,0,0">
                                 <ItemsControl x:Name="PART_ItemsControl"
                                               VirtualizingPanel.IsVirtualizing="True"
                                               VirtualizingPanel.VirtualizationMode="Recycling">
@@ -2286,6 +2497,10 @@
                                                           VerticalScrollBarVisibility="Auto"
                                                           HorizontalScrollBarVisibility="Disabled"
                                                           Padding="0,2,0,8">
+                                                <ScrollViewer.Resources>
+                                                    <!-- 稳定滚动条：拇指常显、hover 只变色（见 StableScrollBar） -->
+                                                    <Style TargetType="ScrollBar" BasedOn="{StaticResource StableScrollBar}"/>
+                                                </ScrollViewer.Resources>
                                                 <ItemsPresenter/>
                                             </ScrollViewer>
                                         </ControlTemplate>
@@ -2321,8 +2536,9 @@
                                            Margin="16"/>
                             </Grid>
 
-                            <!-- 可上下拖动的分隔条：调整属性列表与底部描述区的高度比例 -->
+                            <!-- 可上下拖动的分隔条：调整属性列表与底部描述区的高度比例（随 ShowDescription 隐藏） -->
                             <GridSplitter Grid.Row="2"
+                                          Visibility="{Binding ShowDescription, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"
                                           Height="4"
                                           HorizontalAlignment="Stretch"
                                           Background="{DynamicResource BorderBrush}"
@@ -2330,8 +2546,9 @@
                                           ResizeDirection="Rows"
                                           Cursor="SizeNS"/>
 
-                            <!-- 底部常驻描述区：显示当前选中属性的名称 + 说明 -->
+                            <!-- 底部常驻描述区：显示当前选中属性的名称 + 说明（随 ShowDescription 隐藏） -->
                             <Border Grid.Row="3"
+                                    Visibility="{Binding ShowDescription, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}"
                                     Background="{DynamicResource SecondaryRegionBrush}"
                                     BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="0,1,0,0"
