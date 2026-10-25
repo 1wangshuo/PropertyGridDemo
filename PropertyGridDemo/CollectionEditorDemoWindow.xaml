@@ -230,6 +230,83 @@
                     </Border>
                 </Grid>
             </TabItem>
+            <!-- ==================== Tab: 事件编辑器独立控件 ==================== -->
+            <TabItem Header="事件编辑器独立">
+                <StackPanel Margin="0,12,0,0">
+                    <TextBlock Text="EventEditorControl：处理方法名输入框 + ⚡ 编辑按钮。可脱离 EventPicker/PropertyGrid 独立使用，绑定 HandlerName / IsReadOnly / Placeholder 即可"
+                               FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <Border Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="8" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="处理方法：" VerticalAlignment="Center" Margin="0,0,0,6"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <local:EventEditorControl HandlerName="{Binding SdkHandlerName, Mode=TwoWay}"
+                                                          Placeholder="点右侧 ⚡ 编辑，或直接输入方法名"/>
+                            </Grid>
+                            <TextBlock Text="{Binding SdkHandlerName, StringFormat=当前处理方法: {0}}"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                            <TextBlock Text="⚡ 编辑请求以路由事件冒泡（EditRequested），宿主监听到后弹自己的方法选择窗；无宿主接管时对 EventItem 走默认建议名。"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
+
+            <!-- ==================== Tab: 集合/字典编辑器独立控件 ==================== -->
+            <TabItem Header="集合/字典编辑器独立">
+                <StackPanel Margin="0,12,0,0">
+                    <TextBlock Text="CollectionEditorControl（集合）/ DictionaryEditorControl（字典）：设 Compact=&quot;True&quot; 即为一行「值框 + ...」，点 ... 打开编辑器弹窗；不设则显示完整内联面板"
+                               FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                    <Border Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="CollectionEditorControl（Compact 紧凑形态）" FontWeight="Bold" FontSize="14"
+                                       Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="值班人员列表：" VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <local:CollectionEditorControl Grid.Column="1" Compact="True"
+                                                               Items="{Binding DemoCollection}"/>
+                            </Grid>
+                            <TextBlock Text="{Binding DemoCollectionSummary, StringFormat=当前内容: {0}}"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="8" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="DictionaryEditorControl（Compact 紧凑形态）" FontWeight="Bold" FontSize="14"
+                                       Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="通讯参数表：" VerticalAlignment="Center" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                <local:DictionaryEditorControl Grid.Column="1" Compact="True"
+                                                               Items="{Binding DemoDictionary}"/>
+                            </Grid>
+                            <TextBlock Text="紧凑形态与网格行（[3 项] ... 那条）是同一套视觉，点 ... 复用网格行同款编辑弹窗。"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
         </TabControl>
     </Grid>
 </hc:Window>

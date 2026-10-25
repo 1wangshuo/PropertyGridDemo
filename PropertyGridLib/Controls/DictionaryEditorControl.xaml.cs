@@ -28,6 +28,48 @@ namespace PropertyGridLib.Controls
             set => SetValue(ItemsProperty, value);
         }
 
+        /// <summary>
+        /// 紧凑形态：true = 只显示一条「值框 + ...」（点 ... 打开字典编辑器弹窗）；
+        /// false（默认）= 当前完整内联编辑面板。
+        /// </summary>
+        public static readonly DependencyProperty CompactProperty =
+            DependencyProperty.Register(nameof(Compact), typeof(bool), typeof(DictionaryEditorControl),
+                new PropertyMetadata(false, (d, e) => ((DictionaryEditorControl)d).ApplyCompact()));
+
+        /// <summary>紧凑形态</summary>
+        public bool Compact
+        {
+            get => (bool)GetValue(CompactProperty);
+            set => SetValue(CompactProperty, value);
+        }
+
+        private void ApplyCompact()
+        {
+            if (PanelHost == null || CompactBar == null) return;
+            PanelHost.Visibility = Compact ? Visibility.Collapsed : Visibility.Visible;
+            CompactBar.Visibility = Compact ? Visibility.Visible : Visibility.Collapsed;
+            UpdateCompactSummary();
+        }
+
+        private void UpdateCompactSummary()
+        {
+            if (CompactSummary == null) return;
+            var n = Items?.Count ?? 0;
+            CompactSummary.Text = n == 0 ? "（空字典）" : $"[{n} 项]";
+        }
+
+        /// <summary>紧凑形态的「...」：打开字典编辑器弹窗（与网格行同款对话框），关闭后刷新摘要</summary>
+        private void CompactEdit_Click(object sender, RoutedEventArgs e)
+        {
+            if (Items == null) return;
+            var dlg = new DictionaryEditorDialog(Items);
+            var owner = Window.GetWindow(this);
+            if (owner != null) dlg.Owner = owner;
+            dlg.ShowDialog();
+            LoadDictionary();
+            UpdateCompactSummary();
+        }
+
         private Type _keyType;
         private Type _valueType;
         // _keyIsComplex 仅指“其他复杂对象”（不含字典/列表），由内嵌 PropertyGrid 编辑
@@ -54,6 +96,7 @@ namespace PropertyGridLib.Controls
 
         private void LoadDictionary()
         {
+            ApplyCompact();
             var dict = Items;
             if (dict == null)
             {

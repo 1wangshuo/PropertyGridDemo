@@ -11,7 +11,8 @@
     </UserControl.Resources>
 
     <Grid Margin="4">
-        <Grid>
+        <!-- 完整编辑面板（Compact=false 时显示） -->
+        <Grid x:Name="PanelHost">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto"/>
                 <ColumnDefinition Width="60"/>
@@ -85,6 +86,29 @@
                                            Margin="0"/>
                 </Grid>
             </Border>
+        </Grid>
+
+        <!-- 紧凑形态（Compact=true）：一条「值框 + ...」，点 ... 打开集合编辑器弹窗。
+             与网格行的集合编辑器同一套视觉，独立使用时也能只占一行高度。 -->
+        <Grid x:Name="CompactBar" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0"
+                    Background="{DynamicResource RegionBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1" CornerRadius="4"
+                    Padding="8,0" MinHeight="30"
+                    SnapsToDevicePixels="True">
+                <TextBlock x:Name="CompactSummary"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+            </Border>
+            <Button Grid.Column="1" Content="..." MinWidth="30" Margin="4,0,0,0"
+                    Click="CompactEdit_Click"
+                    ToolTip="打开集合编辑器"/>
         </Grid>
     </Grid>
 </UserControl>

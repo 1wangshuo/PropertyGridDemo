@@ -62,6 +62,9 @@ namespace PropertyGridLib
             base.OnApplyTemplate();
 
             _itemsControl = GetTemplateChild("PART_ItemsControl") as ItemsControl;
+            _proDescriptionRow = GetTemplateChild("PART_ProDescriptionRow") as RowDefinition;
+            _proSplitterRow = GetTemplateChild("PART_ProSplitterRow") as RowDefinition;
+            ApplyDescriptionRows();
             // 模板重应用时内层 ItemsControl 可能是新实例：强制丢弃旧引用，
             // 让 RebuildRows 惰性重新获取（此时内层模板多半尚未实例化，FindName 拿不到）。
             _scrollViewer = null;
@@ -109,16 +112,83 @@ namespace PropertyGridLib
             DependencyProperty.Register(nameof(GroupedCategories), typeof(IEnumerable), typeof(PropertyGridPro),
                 new FrameworkPropertyMetadata(null));
 
-        /// <summary>属性列表是否启用 UI 虚拟化（默认 true，与基类 PropertyGrid 一致）。
-        /// 宿主自定义 RowTemplate 出现滚动串值时可设为 false 回退到全量生成。</summary>
+        /// <summary>
+        /// 属性列表是否启用 UI 虚拟化（Pro <b>默认 false</b>）。
+        /// 为什么和基类相反：Pro 的行高差异极大（图片预览行 ~200、纯文字行 ~90），
+        /// 项滚动下的"平均行高估算"会让 Extent 随滚动不断重估 ——
+        /// 表现为滚动条拇指忽大忽小、拖到底还留一大片空白（demo 反复实测）。
+        /// 关掉后布局精确、滚动条稳定；行数 <see cref="VirtualizationRowThreshold"/> 时
+        /// 无论开关都不虚拟化，超过阈值且宿主显式开启才走虚拟化。
+        /// </summary>
         public static readonly DependencyProperty EnableVirtualizationProperty =
             DependencyProperty.Register(nameof(EnableVirtualization), typeof(bool), typeof(PropertyGridPro),
-                new PropertyMetadata(true, OnEnableVirtualizationChanged));
+                new PropertyMetadata(false, OnEnableVirtualizationChanged));
+
+        /// <summary>行数超过该值才允许虚拟化（行数少时全量生成换精确布局，开销可忽略）。</summary>
+        public const int VirtualizationRowThreshold = 150;
 
         /// <summary>当前选中的属性项</summary>
         public static readonly DependencyProperty SelectedPropertyItemProperty =
             DependencyProperty.Register(nameof(SelectedPropertyItem), typeof(IPropertyItem), typeof(PropertyGridPro),
                 new FrameworkPropertyMetadata(null));
+
+        /// <summary>
+        /// 是否显示底部描述栏。Pro <b>默认 false</b>：
+        /// 每行卡片里"名称 → 说明 → 编辑器"已经把属性说明摆在标题下面，
+        /// 底部再挂一条同样的描述是重复占高度（demo 反馈）。
+        /// 需要时宿主显式设 true。
+        /// </summary>
+        public static readonly DependencyProperty ShowDescriptionProperty =
+            DependencyProperty.Register(nameof(ShowDescription), typeof(bool), typeof(PropertyGridPro),
+                new FrameworkPropertyMetadata(false, OnShowDescriptionChanged));
+
+        /// <summary>是否显示底部描述栏</summary>
+        public bool ShowDescription
+        {
+            get => (bool)GetValue(ShowDescriptionProperty);
+            set => SetValue(ShowDescriptionProperty, value);
+        }
+
+        // 描述栏行（固定 80 可拖）与分割行：ShowDescription=false 时压 0 —— 固定行不随内容收缩，
+        // 只隐藏内容会在底部留一条空白（demo 实测）。
+        private RowDefinition _proDescriptionRow;
+        private RowDefinition _proSplitterRow;
+        private GridLength _proRowSavedHeight;
+        private double _proRowSavedMin;
+        private double _proRowSavedMax;
+        private bool _proRowCollapsed;
+
+        private static void OnShowDescriptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is PropertyGridPro grid) grid.ApplyDescriptionRows();
+        }
+
+        private void ApplyDescriptionRows()
+        {
+            if (_proDescriptionRow == null) return;
+            if (!ShowDescription)
+            {
+                if (!_proRowCollapsed)
+                {
+                    _proRowSavedHeight = _proDescriptionRow.Height;
+                    _proRowSavedMin = _proDescriptionRow.MinHeight;
+                    _proRowSavedMax = _proDescriptionRow.MaxHeight;
+                    _proRowCollapsed = true;
+                }
+                _proDescriptionRow.Height = new GridLength(0);
+                _proDescriptionRow.MinHeight = 0;
+                _proDescriptionRow.MaxHeight = 0;
+                if (_proSplitterRow != null) _proSplitterRow.Height = new GridLength(0);
+            }
+            else if (_proRowCollapsed)
+            {
+                _proDescriptionRow.Height = _proRowSavedHeight;
+                _proDescriptionRow.MinHeight = _proRowSavedMin;
+                _proDescriptionRow.MaxHeight = _proRowSavedMax;
+                if (_proSplitterRow != null) _proSplitterRow.Height = new GridLength(4);
+                _proRowCollapsed = false;
+            }
+        }
 
         /// <summary>面板标题</summary>
         public static readonly DependencyProperty HeaderProperty =
@@ -211,6 +281,7 @@ namespace PropertyGridLib
         /// </summary>
         public static readonly DependencyProperty ShowTypeHintProperty =
             DependencyProperty.Register(nameof(ShowTypeHint), typeof(bool), typeof(PropertyGridPro),
+                // 与基类一致：默认开启，公式绑定后输入框旁直接标注目标类型 "(int)"。
                 new FrameworkPropertyMetadata(true));
 
         /// <summary>要展示的对象；赋值后自动反射生成属性行</summary>
@@ -544,6 +615,16 @@ namespace PropertyGridLib
         var sectionGroup = Layout == ProLayout.Section && ShowCategoryHeaders;
         var rows = PropertyGrid.BuildFlatRows(categories, ShowCategoryHeaders && !sectionGroup, sectionGroup);
         double offset = _scrollViewer?.VerticalOffset ?? 0;
+
+        // 行数自适应虚拟化：行数不到阈值就全量生成 ——
+        // 虚拟化面板按平均行高估算 Extent，而 Section 行高差异极大
+        //（图片预览行 ~200、纯文字行 ~90），估算随滚动重估时滚动条拇指忽大忽小、
+        // 拖到底还留一大片空白（demo 实测）；大列表（>150 行）才走虚拟化。
+        if (_itemsControl != null)
+        {
+            var virtualize = EnableVirtualization && rows.Count > VirtualizationRowThreshold;
+            VirtualizingPanel.SetIsVirtualizing(_itemsControl, virtualize);
+        }
 
         // 预热只用于"首次填充"（offset=0）：修 CanContentScroll 下 VSP 首次布局用预测容器
         // （≈2px）估算导致的无滚动条问题。已滚动的重建绝不预热 —— 1 行中间态会把面板内部

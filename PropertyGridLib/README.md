@@ -2,15 +2,26 @@
 
 WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl UI 库。
 
-> **版本 1.6.0** | .NET Framework 4.8+ / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
+> **版本 1.7.0** | .NET Framework 4.8+ / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
 
 ### 📦 相关仓库
 
 | 仓库 | 地址 |
 |------|------|
-| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.6.0` |
+| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.7.0` |
 | **Demo 项目** | https://github.com/1wangshuo/PropertyGridDemo |
 | **技能文档** | [skill/SKILL.md](https://github.com/1wangshuo/PropertyGridDemo/blob/main/skill/SKILL.md)（多页使用文档：基础用法 / 特性清单 / 编辑器类型 / 主题多语言 / 公式绑定 / PropertyGridPro / 示例模型 / FAQ） |
+
+---
+
+## ✨ v1.7.0 新特性
+
+- ✅ **🧩 三个编辑器可独立使用** — 集合、字典、事件编辑器不再依赖 `PropertyGrid`，宿主直接给 `Items` / `Dictionary` / `HandlerName` 赋值即可嵌入任意容器。
+- ✅ **📏 集合与字典编辑器新增 `Compact` 紧凑形态** — 只占一行（值框 + `...`），点 `...` 打开编辑弹窗；适合一行放一个集合的场景。
+- ✅ **🔌 事件编辑器独立用法** — `HandlerName` / `IsBound` / `IsReadOnly` / `Placeholder` 四个依赖属性，请求编辑经 `RequestEditEvent` 路由事件抛出，由宿主决定打开哪种编辑器。
+- ✅ **🪄 开关补齐** — `PropertyGrid.ShowHeader`（顶部标题区）、`PropertyGridPro.ShowDescription`（底部描述栏）、`PropertyCategory.ShowGroupSeparator`（分类头主题色细线）。
+- ✅ **🌐 切换语言不乱序** — 属性与分类的排序改用特性原文作基准，本地化只换显示不换顺序。
+- ✅ **🐛 Pro 滚动条抖动修复** — `PropertyGridPro.EnableVirtualization` 默认改为关闭：Pro 行高差异大（图片行约 200、文字行约 90），平均行高估算会让滚动条忽大忽小、底部留白。行数少于 `VirtualizationRowThreshold`（150）时一律全量生成。
 
 ---
 
@@ -158,19 +169,19 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 ### NuGet 包管理器
 
 ```powershell
-Install-Package PropertyGridLib -Version 1.6.0
+Install-Package PropertyGridLib -Version 1.7.0
 ```
 
 ### .NET CLI
 
 ```bash
-dotnet add package PropertyGridLib --version 1.6.0
+dotnet add package PropertyGridLib --version 1.7.0
 ```
 
 ### PackageReference (PackageReference)
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.6.0" />
+<PackageReference Include="PropertyGridLib" Version="1.7.0" />
 ```
 
 安装后，NuGet 会自动拉取依赖项 `HandyControl 3.5.1`。
@@ -623,6 +634,14 @@ propertyGrid.SelectedObject = new Dictionary<string, int> { { "A", 1 }, { "B", 2
 
 > ⚠️ 复杂键为可变对象时，就地编辑会改变其哈希——编辑器在"确定/切换条目"时会 `Clear + 重新 Add` 重建哈希；复杂键类型务必重写 `Equals`/`GetHashCode`。另注意 `System.Text.Json` 不支持非字符串字典键，故复杂键字典不宜作为会被深拷贝（Reset）的 `[Serializable]` 模型属性。
 
+### 紧凑形态（Compact）
+
+`Compact="True"` 时只显示一行：值框 + `...`。点 `...` 打开与网格行同款的编辑弹窗，关闭后刷新摘要。默认 `False`，保持完整内联编辑面板。
+
+```xml
+<controls:DictionaryEditorControl x:Name="dict" Items="{Binding MyMap}" Compact="True" />
+```
+
 ---
 
 ## 🔌 宿主自定义编辑器扩展机制
@@ -929,6 +948,36 @@ simpleEditor.Items = new List<int> { 1, 2, 3 };
 ```
 
 > 两个控件都直接操作传入的 `IList` 实例，每次增删改操作后立即同步回源集合。
+
+### 紧凑形态（Compact）
+
+`CollectionEditorControl` 与 `DictionaryEditorControl` 支持 `Compact="True"`：只占一行（值框 + `...`），点 `...` 打开编辑弹窗，关闭后刷新摘要。默认 `False`，保持完整内联编辑面板。
+
+```xml
+<controls:CollectionEditorControl x:Name="editor" Items="{Binding MyList}" Compact="True" />
+```
+
+---
+
+## 事件编辑器独立使用
+
+`EventEditorControl` 可脱离 `PropertyGrid` 使用，直接给依赖属性赋值即可：
+
+```xml
+<controls:EventEditorControl x:Name="ev"
+                             HandlerName="{Binding Path, Mode=TwoWay}"
+                             IsBound="{Binding HasHandler}"
+                             Placeholder="选择处理方法" />
+```
+
+| 属性 | 说明 |
+|------|------|
+| `HandlerName` | 处理方法名。默认双向绑定；`DataContext` 为 `EventItem` 时与它的 `HandlerName` 自动同步 |
+| `IsBound` | 是否已绑定处理方法（独立用法下可用于绿标或自定义提示，控件模板不直接渲染） |
+| `IsReadOnly` | 只读。独立用法直接设置；网格内联时同步自 `EventItem` |
+| `Placeholder` | 输入框占位文字。为 null 时回落到本地化的「未绑定」 |
+
+请求编辑经 `RequestEditEvent` 路由事件抛出，参数携带对应的 `EventItem`（独立用法下为 null，宿主可从发送方读 `HandlerName`）。宿主收到后自行决定打开哪种编辑器。
 
 ---
 
@@ -1382,7 +1431,7 @@ PropertyGrid 在内部监听 `LocalizationManager.LanguageChanged` 事件，语�
 | 依赖 | 版本 | 说明 |
 |------|------|------|
 | .NET Framework | 4.8+ | 支持的目标框架之一 |
-| .NET | 6.0/7.0/8.0-windows | 支持的现代框架 |
+| .NET | 6.0/7.0/8.0/10.0-windows | 支持的现代框架 |
 | HandyControl | 3.5.1 | 官方 HandyControl UI 控件库 |
 | System.Text.Json | 6.0.0+ | 仅 .NET Framework 4.8 需要（.NET 6+ 内置） |
 
@@ -1394,6 +1443,31 @@ PropertyGrid 在内部监听 `LocalizationManager.LanguageChanged` 事件，语�
 ---
 
 ## 更新日志
+
+### v1.7.0（2026-10-25）
+
+#### ✨ 新增
+
+- **三个编辑器可独立使用**：集合、字典、事件编辑器不再依赖 `PropertyGrid`，宿主直接给 `Items` / `Dictionary` / `HandlerName` 赋值即可嵌入任意容器。
+
+  - `CollectionEditorControl.Compact` / `DictionaryEditorControl.Compact`：紧凑形态只占一行（值框 + `...`），点 `...` 打开编辑弹窗，关闭后刷新摘要；默认 `False` 保持完整内联编辑面板。
+  - `EventEditorControl` 独立用法：`HandlerName` / `IsBound` / `IsReadOnly` / `Placeholder` 四个依赖属性；请求编辑经 `RequestEditEvent` 路由事件抛出，参数携带 `EventItem`（独立用法下为 null，宿主可从发送方读 `HandlerName`）。
+  - `PropertyGrid.ShowHeader`：顶部标题区开关；`PropertyGridPro.ShowHeader` 同名同语义。
+  - `PropertyGridPro.ShowDescription`：底部描述栏开关。
+  - `PropertyCategory.ShowGroupSeparator`：分类头顶部画主题色细线，与 Section 布局的行分隔线同一套观感。
+
+#### 🔧 改进
+
+- **切换语言不乱序**：属性与分类的排序改用特性原文作基准（`SortCategory` / `SortDisplayName`），本地化只换显示不换顺序。
+- **Pro 滚动条抖动修复**：`PropertyGridPro.EnableVirtualization` 默认改为关闭。Pro 行高差异大（图片预览行约 200、纯文字行约 90），平均行高估算会让滚动条忽大忽小、拖到底还留一大片空白。行数少于 `VirtualizationRowThreshold`（150）时无论开关都不虚拟化；超过阈值且宿主显式开启才走虚拟化。
+- 事件列表虚拟化按行数自适应，修掉滚到底残留大片空白。
+- 基础网格公式绑定默认显示目标类型提示（`(int)` 之类），嫌挤可显式关闭。
+- 描述栏隐藏时整行压 0，不在底部留空条。
+
+#### 🐛 缺陷修复
+
+- 普通版 `ShowDescription` 先关再开后描述栏不显示（开启时补一次选中项重算）。
+- 分类头分隔线在窄面板下压到分类标题。
 
 ### v1.6.0（2026-10-15）
 

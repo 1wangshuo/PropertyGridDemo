@@ -54,6 +54,13 @@ namespace PropertyGridDemo
             proGrid.ShowCategoryHeaders = chkCategory.IsChecked == true;
             proGrid.ShowHeader = chkHeader.IsChecked == true;
             proGrid.Layout = chkSection.IsChecked == true ? ProLayout.Section : ProLayout.Card;
+
+            // 底部属性详情栏：两个开关分开控制（默认值不同 —— 普通版显示、Pro 不显示）
+            grid.ShowDescription = chkDesc.IsChecked == true;
+            proGrid.ShowDescription = chkProDesc.IsChecked == true;
+
+            // 顶部标题区：普通版新增 ShowHeader（与 Pro 版同名属性，语义一致）
+            grid.ShowHeader = chkHeader.IsChecked == true;
         }
     }
 

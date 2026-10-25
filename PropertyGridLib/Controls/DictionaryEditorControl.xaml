@@ -11,6 +11,8 @@
     </UserControl.Resources>
 
     <Grid Margin="4">
+        <!-- 完整编辑面板（Compact=false 时显示）；与下方紧凑条互斥 -->
+        <Grid x:Name="PanelHost">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="*"/>
@@ -134,5 +136,28 @@
                 </Grid>
             </Grid>
         </Border>
+        </Grid>
+
+        <!-- 紧凑形态（Compact=true）：一条「值框 + ...」，点 ... 打开字典编辑器弹窗 -->
+        <Grid x:Name="CompactBar" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0"
+                    Background="{DynamicResource RegionBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1" CornerRadius="4"
+                    Padding="8,0" MinHeight="30"
+                    SnapsToDevicePixels="True">
+                <TextBlock x:Name="CompactSummary"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource PrimaryTextBrush}"/>
+            </Border>
+            <Button Grid.Column="1" Content="..." MinWidth="30" Margin="4,0,0,0"
+                    Click="CompactEdit_Click"
+                    ToolTip="打开字典编辑器"/>
+        </Grid>
     </Grid>
 </UserControl>
