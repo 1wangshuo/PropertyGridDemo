@@ -466,6 +466,12 @@ namespace PropertyGridLib.Controls
                     var bound = _propertyInfo.GetValue(_owner);
                     if (bound != null)
                     {
+                        // TwoWay 绑定在行控件复用/换绑宿主时会把控件当前值回推；
+                        // 非公式属性在 Value setter 里有同样的相等性保护，公式这里也不能漏：
+                        // 不回推相同值，避免"切到同类型条目时把上一项的公式写进新宿主"。
+                        var current = (string)_formulaBoundFormulaProp.GetValue(bound);
+                        if (string.Equals(current, value, StringComparison.Ordinal)) return;
+
                         _formulaBoundFormulaProp.SetValue(bound, value);
                         OnPropertyChanged(nameof(FormulaString));
                     }
@@ -986,6 +992,10 @@ namespace PropertyGridLib.Controls
             OnPropertyChanged(nameof(ChildProperties));
             OnPropertyChanged(nameof(IsLink));
             OnPropertyChanged(nameof(BoolValue));
+            // 公式文本也是"从宿主现读"的 live 值：同类型换对象（集合编辑器切换条目）
+            // 走 RebindOwner→Refresh，漏发这一条会让公式框继续显示上一项的公式，
+            // 现场看起来就是"改了一项的绑定，另一项也变了"。
+            OnPropertyChanged(nameof(FormulaString));
         }
 
         #region 值形态扩展（链接 / 布尔视图）
@@ -1269,6 +1279,10 @@ namespace PropertyGridLib.Controls
 
             Refresh();
             if (_enumType != null) OnPropertyChanged(nameof(EnumSelectedItem));
+
+            // 公式条的展开状态跟着新宿主的数据走（构造时也是这个规则）：
+            // 不更新会沿用上一项的"展开/收起"，切到空公式条目仍显示覆盖条。
+            if (_isFormulaBound) IsFormulaEditorOpen = !string.IsNullOrEmpty(FormulaString);
         }
 
         /// <summary>浏览文件</summary>
