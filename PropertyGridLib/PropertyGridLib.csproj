@@ -10,9 +10,9 @@
     
     <!-- NuGet 包配置 -->
     <PackageId>PropertyGridLib</PackageId>
-    <Version>1.7.0</Version>
-    <AssemblyVersion>1.7.0.0</AssemblyVersion>
-    <FileVersion>1.7.0.0</FileVersion>
+    <Version>1.7.1</Version>
+    <AssemblyVersion>1.7.1.0</AssemblyVersion>
+    <FileVersion>1.7.1.0</FileVersion>
     <Authors>WangShuo</Authors>
     <Company>WangShuo</Company>
     <Product>PropertyGridLib</Product>
@@ -20,7 +20,9 @@
     <Trademark>WangShuo</Trademark>
     <Description>WPF 属性网格控件库（基于 HandyControl）。PropertyGrid 提供经典两栏与紧凑单行两种排布、分类卡片、搜索与多语言；PropertyGridPro 提供卡片式与选项页表单式排布。内置集合/字典/公式绑定/颜色/图片/链接等编辑器，支持 [Highlight] 关键属性标记与 [EditorChrome] 编辑器装饰开关。适用于 .NET Framework 4.8 与 .NET 6/7/8/10 (Windows)。</Description>
     <PackageTags>WPF;PropertyGrid;PropertyGridPro;Editor;Controls;Button;Dictionary;Collection;Formula;MultiSelect;ToggleSwitch;Localization;EventPicker;Events;HandyControl;TypeConverter;NETCoreApp3;NET6;NET7;NET8;NET10</PackageTags>
-    <PackageReleaseNotes>1.7.0
+    <PackageReleaseNotes>1.7.1
+· 修复：换绑同类型对象时补发 FormulaString 通知，集合条目公式不再串写
+1.7.0
 · 集合 / 字典 / 事件三个编辑器控件可脱离 PropertyGrid 独立使用
 · 集合与字典编辑器新增 Compact 紧凑形态：只占一行，点 ... 打开弹窗
 · 事件编辑器独立用法的 HandlerName / IsBound / IsReadOnly / Placeholder 四个依赖属性
@@ -42,7 +44,7 @@
          包会落到 PropertyGridLib\nuget\ 造成「两个地方都有包、分不清哪个最新」。
          这里以工程文件位置为准推导，任何方式打包都输出到同一目录。 -->
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\nuget\</PackageOutputPath>
-    <InformationalVersion>1.7.0</InformationalVersion>
+    <InformationalVersion>1.7.1</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
