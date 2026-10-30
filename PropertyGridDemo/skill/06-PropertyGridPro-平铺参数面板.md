@@ -1,14 +1,3 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 09749610af649f3b41be24ad18fd73a1_01e9fa9eb0e211f1af37525400826444
-    ReservedCode1: wcMOof0NSI21PwnqDJ6+GsAdjla0Ntkw2YzCv5SlN0tJsOUiW9tSFSThavYGncwW97saYDgpBNsa4RwB03o/WYdzRD9MHBStEUeoo3vekzsZ3eSP2YHwjMkboXcnTFup424qYrDbFI+oRcVzNB4WgiKbWGFAfMjq+UZ0iV0dbYFrsDyG6Z4+m5AEmHM=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 09749610af649f3b41be24ad18fd73a1_01e9fa9eb0e211f1af37525400826444
-    ReservedCode2: wcMOof0NSI21PwnqDJ6+GsAdjla0Ntkw2YzCv5SlN0tJsOUiW9tSFSThavYGncwW97saYDgpBNsa4RwB03o/WYdzRD9MHBStEUeoo3vekzsZ3eSP2YHwjMkboXcnTFup424qYrDbFI+oRcVzNB4WgiKbWGFAfMjq+UZ0iV0dbYFrsDyG6Z4+m5AEmHM=
----
-
 # 06 PropertyGridPro 平铺参数面板
 
 > 目标：用 `PropertyGridPro` 做出「参数面板」风格的界面：纵向平铺、卡片式属性行、带头部信息与属性搜索。1.3.0 新增控件。
@@ -146,4 +135,3 @@ PropertyGridPro1.SelectedObject = new SampleObject();
 | 层级深、属性多、需要收纳 | `PropertyGrid`（可折叠分类 + 树形层级） |
 | 参数面板 / 属性面板，强调一屏扫读 | `PropertyGridPro`（平铺 + 卡片） |
 | 需要在两者之间切换 | 保持模型与特性不变，仅替换控件标签即可 |
-*（内容由AI生成，仅供参考）*

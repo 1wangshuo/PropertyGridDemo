@@ -5,6 +5,7 @@
     xmlns:local="clr-namespace:PropertyGridLib.Controls"
     xmlns:pg="clr-namespace:PropertyGridLib"
     xmlns:conv="clr-namespace:PropertyGridLib.Converters"
+    xmlns:behaviors="clr-namespace:PropertyGridLib.Behaviors"
     xmlns:loc="clr-namespace:PropertyGridLib.Localization">
 
     <!-- 转换器 -->
@@ -15,10 +16,14 @@
     <conv:NullToVisibilityConverter x:Key="NullToVis"/>
     <conv:IsNoneToVisibilityConverter x:Key="IsNoneVis"/>
     <conv:AndVisConverter x:Key="AndVis"/>
+    <!-- 复位按钮 R：未修改时 Hidden（保留槽位，编辑器列宽不随 R 出现/消失而抖） -->
+    <conv:ResetButtonVisConverter x:Key="ResetButtonVis"/>
     <conv:IntToDoubleConverter x:Key="IntToDouble"/>
     <conv:DateTimeConverter x:Key="DateTimeConv"/>
     <conv:ObjectToTypeConverter x:Key="ObjToType"/>
     <conv:FontSizeOffsetConverter x:Key="FontSizeOffset"/>
+    <!-- 绑定源键名/类型提示过长时的「前缀…后缀」中间省略 -->
+    <conv:MiddleEllipsisConverter x:Key="MiddleEllipsis"/>
     <!-- 长度的指定比例：Small 布局标题列「Auto 但最多 50%」的封顶用 -->
     <conv:RatioLengthConverter x:Key="RatioLength"/>
     <!-- 表单式分类列宽：min(期望列宽, 面板宽 × 比例)，面板拖窄时不让分类列挤死内容区 -->
@@ -173,21 +178,39 @@
                               ItemsSource="{Binding Children}">
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="{Binding Header}"/>
+            <!-- 键名过长时中间省略成「前3字…后3字」：前缀是流程/任务层级、后缀是属性名末尾，
+                 比纯尾部省略更容易认；完整文本走 ToolTip，不用横向拉。
+                 树里横向滚动已禁用，省略后的文本会在类型胶囊左侧自然收窄。 -->
+            <TextBlock Grid.Column="0"
+                       Text="{Binding Header, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding Header}"/>
             <!-- 类型提示(如 “(int)”)：宿主未填 FormulaType 时 TypeHint 为 null，不显示。
                  绑定源树里不受 ShowTypeHint 开关控制 —— 选绑定源时类型一眼有用，
                  行内公式条上的提示才受那个开关管（那里挤）。 -->
-            <!-- 类型提示用主题强调色（斜体）：与关键属性竖线、绑定图标同一色系 -->
-            <TextBlock Grid.Column="2" Text="{Binding TypeHint}"
-                       Margin="6,0,0,0"
-                       FontStyle="Italic"
-                       Opacity="0.85"
-                       Foreground="{DynamicResource PrimaryBrush}"
-                       Visibility="{Binding TypeHint, Converter={StaticResource NullToVis}}"/>
+            <!-- 类型提示做成淡色小胶囊（斜体强调色）：与键名拉开层次，
+                 泛型类型名（Dictionary<String, List<Double>>）太长时中间省略，全文走 ToolTip -->
+            <Border Grid.Column="1"
+                    Margin="8,0,2,0"
+                    Padding="5,1"
+                    CornerRadius="3"
+                    Background="{DynamicResource SecondaryRegionBrush}"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    VerticalAlignment="Center"
+                    MaxWidth="140"
+                    Visibility="{Binding TypeHint, Converter={StaticResource NullToVis}}">
+                <TextBlock Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=16}"
+                           FontSize="11"
+                           FontStyle="Italic"
+                           Opacity="0.9"
+                           Foreground="{DynamicResource PrimaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding TypeHint}"/>
+            </Border>
         </Grid>
     </HierarchicalDataTemplate>
 
@@ -207,54 +230,69 @@
                     <StackPanel>
                         <Border x:Name="RowBg"
                                 Background="Transparent"
-                                CornerRadius="3"
-                                Padding="2,3"
+                                CornerRadius="4"
+                                Padding="2,4"
                                 SnapsToDevicePixels="True">
                             <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <!-- 展开箭头：可点击的 ToggleButton，双向绑定 IsExpanded，
-                                     单击箭头即展开/收起（纯图形无法响应点击）。 -->
-                                <ToggleButton x:Name="Expander"
-                                              Grid.Column="0"
-                                              Width="16" Height="16"
-                                              Margin="0,0,4,0"
-                                              Focusable="False"
-                                              IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
-                                    <ToggleButton.Template>
-                                        <ControlTemplate TargetType="ToggleButton">
-                                            <Border Background="Transparent" Padding="4">
-                                                <Path x:Name="Arrow"
-                                                      Width="7" Height="7"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Center"
-                                                      Stretch="Uniform"
-                                                      Data="M0,0 L4,4 L0,8 Z"
-                                                      Fill="{DynamicResource SecondaryTextBrush}"
-                                                      RenderTransformOrigin="0.5,0.5">
-                                                    <Path.RenderTransform>
-                                                        <RotateTransform Angle="0"/>
-                                                    </Path.RenderTransform>
-                                                </Path>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsChecked" Value="True">
-                                                    <Setter TargetName="Arrow" Property="RenderTransform">
-                                                        <Setter.Value>
-                                                            <RotateTransform Angle="90"/>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </ToggleButton.Template>
-                                </ToggleButton>
-                                <ContentPresenter Grid.Column="1"
-                                                  ContentSource="Header"
-                                                  HorizontalAlignment="Stretch"
-                                                  VerticalAlignment="Center"/>
+                                <!-- 选中态：淡主题色底 + 左侧强调竖条（不抢键名，但一眼能看出选中） -->
+                                <Border x:Name="SelTint"
+                                        Background="{DynamicResource PrimaryBrush}"
+                                        Opacity="0"
+                                        CornerRadius="4"/>
+                                <Border x:Name="SelBar"
+                                        Width="3"
+                                        Margin="0,2,0,2"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Stretch"
+                                        Background="{DynamicResource PrimaryBrush}"
+                                        CornerRadius="1.5"
+                                        Visibility="Collapsed"/>
+                                <Grid Margin="6,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <!-- 展开箭头：可点击的 ToggleButton，双向绑定 IsExpanded，
+                                         单击箭头即展开/收起（纯图形无法响应点击）。 -->
+                                    <ToggleButton x:Name="Expander"
+                                                  Grid.Column="0"
+                                                  Width="16" Height="16"
+                                                  Margin="0,0,4,0"
+                                                  Focusable="False"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                        <ToggleButton.Template>
+                                            <ControlTemplate TargetType="ToggleButton">
+                                                <Border Background="Transparent" Padding="4">
+                                                    <Path x:Name="Arrow"
+                                                          Width="7" Height="7"
+                                                          VerticalAlignment="Center"
+                                                          HorizontalAlignment="Center"
+                                                          Stretch="Uniform"
+                                                          Data="M0,0 L4,4 L0,8 Z"
+                                                          Fill="{DynamicResource SecondaryTextBrush}"
+                                                          RenderTransformOrigin="0.5,0.5">
+                                                        <Path.RenderTransform>
+                                                            <RotateTransform Angle="0"/>
+                                                        </Path.RenderTransform>
+                                                    </Path>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsChecked" Value="True">
+                                                        <Setter TargetName="Arrow" Property="RenderTransform">
+                                                            <Setter.Value>
+                                                                <RotateTransform Angle="90"/>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </ToggleButton.Template>
+                                    </ToggleButton>
+                                    <ContentPresenter Grid.Column="1"
+                                                      ContentSource="Header"
+                                                      HorizontalAlignment="Stretch"
+                                                      VerticalAlignment="Center"/>
+                                </Grid>
                             </Grid>
                         </Border>
                         <ItemsPresenter x:Name="ItemsHost" Margin="14,0,0,2"/>
@@ -271,7 +309,8 @@
                             <Setter TargetName="RowBg" Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="RowBg" Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                            <Setter TargetName="SelTint" Property="Opacity" Value="0.12"/>
+                            <Setter TargetName="SelBar" Property="Visibility" Value="Visible"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -354,7 +393,7 @@
                                                Stretch="Uniform"
                                                RenderOptions.BitmapScalingMode="HighQuality"/>
                                         <TextBlock x:Name="ImageEmpty"
-                                                   Text="无预览"
+                                                   Text="{loc:Localized NoPreview}"
                                                    FontSize="11"
                                                    Opacity="0.7"
                                                    Visibility="Collapsed"
@@ -510,7 +549,7 @@
                             Width="auto"
                             Margin="4,0,0,0"
                             Command="{Binding EditCollectionCommand}"
-                            ToolTip="打开集合编辑器"/>
+                            ToolTip="{loc:Localized OpenCollectionEditor}"/>
                 </Grid>
             </DataTemplate>
         </local:EditorTemplateSelector.CollectionTemplate>
@@ -541,7 +580,7 @@
                             Width="auto"
                             Margin="4,0,0,0"
                             Command="{Binding EditCollectionCommand}"
-                            ToolTip="打开字典编辑器"/>
+                            ToolTip="{loc:Localized OpenDictionaryEditor}"/>
                 </Grid>
             </DataTemplate>
         </local:EditorTemplateSelector.DictionaryTemplate>
@@ -587,6 +626,19 @@
                 </Grid>
             </DataTemplate>
         </local:EditorTemplateSelector.SliderTemplate>
+
+        <!-- 范围滑块（属性类型为 RangeValue 时自动启用；[RangeSlider] 配最小值/最大值/步长） -->
+        <local:EditorTemplateSelector.RangeSliderTemplate>
+            <DataTemplate>
+                <!-- 边界属性须写在 Value 之前：控件先拿到边界范围再设区间值，避免被默认 0~100 钳制 -->
+                <local:RangeSliderControl
+                    Minimum="{Binding SliderMinimum}"
+                    Maximum="{Binding SliderMaximum}"
+                    Step="{Binding SliderStep}"
+                    IsReadOnly="{Binding IsReadOnly}"
+                    Value="{Binding Value, Mode=TwoWay}"/>
+            </DataTemplate>
+        </local:EditorTemplateSelector.RangeSliderTemplate>
 
         <local:EditorTemplateSelector.DropDownTemplate>
             <DataTemplate>
@@ -668,24 +720,56 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
+
                         <hc:TextBox x:Name="PART_Input" Grid.Column="0"
                                  Text="{Binding FormulaString, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                  IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
                                  FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-1}"
                                  Foreground="{DynamicResource SecondaryTextBrush}"
                                  VerticalContentAlignment="Center"
+                                 ToolTip="{Binding FormulaString, RelativeSource={RelativeSource TemplatedParent}}"
                                  hc:InfoElement.Placeholder="{loc:Localized FormulaPlaceholder}"/>
+                        <!-- 选绑定源：淡主题色圆角按钮；悬停/弹窗打开时加深，
+                             比"透明背景 + 细图标"更像一个可点的入口 -->
                         <ToggleButton Grid.Column="1"
                                       x:Name="PART_PopupButton"
                                       Width="24" Height="24"
                                       Padding="0" Margin="4,0,0,0"
-                                      Style="{StaticResource IconToggleButtonStyle}"
+                                      Cursor="Hand"
                                       ToolTip="{loc:Localized SelectBindingSource}">
-                            <Path x:Name="PART_PopupIcon"
-                                  Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
-                                  Fill="{DynamicResource PrimaryBrush}"
-                                  Width="14" Height="14"
-                                  Stretch="Uniform"/>
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Grid x:Name="BtnRoot">
+                                        <Border x:Name="BtnBg"
+                                                Background="{DynamicResource PrimaryBrush}"
+                                                Opacity="0.10"
+                                                CornerRadius="5"/>
+                                        <Border x:Name="BtnEdge"
+                                                BorderBrush="{DynamicResource PrimaryBrush}"
+                                                BorderThickness="1"
+                                                Opacity="0.35"
+                                                CornerRadius="5"/>
+                                        <Path x:Name="PART_PopupIcon"
+                                              Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                              Fill="{DynamicResource PrimaryBrush}"
+                                              Width="14" Height="14"
+                                              Stretch="Uniform"
+                                              HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="BtnBg" Property="Opacity" Value="0.18"/>
+                                        </Trigger>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter TargetName="BtnBg" Property="Opacity" Value="0.22"/>
+                                        </Trigger>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="BtnRoot" Property="Opacity" Value="0.4"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
                         </ToggleButton>
                         <!-- AllowsTransparency 必须开：关闭时系统会给 Popup 套一个"方形不透明窗口"，
                              内容那层 Border 有 CornerRadius，四个角就露出窗口底色 —— 看起来是四个黑角。
@@ -695,29 +779,55 @@
                                PlacementTarget="{Binding ElementName=PART_PopupButton}"
                                StaysOpen="False"
                                AllowsTransparency="True"
-                               PopupAnimation="None"
-                               Width="300" Height="400">
-                            <Border Background="{DynamicResource RegionBrush}"
+                               PopupAnimation="Fade"
+                               Width="320" Height="400">
+                            <!-- 外层留 8 边给阴影：圆角 + 描边 + 阴影一起，面板才"浮"在行上方 -->
+                            <Border Margin="8"
+                                    Background="{DynamicResource RegionBrush}"
                                     BorderBrush="{DynamicResource BorderBrush}"
                                     BorderThickness="1"
-                                    CornerRadius="4"
+                                    CornerRadius="8"
+                                    Effect="{StaticResource PopupShadowEffect}"
                                     TextElement.FontFamily="{Binding FontFamily, RelativeSource={RelativeSource TemplatedParent}}"
                                     TextElement.FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}}">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
-                                    <TextBlock Grid.Row="0" Text="{loc:Localized SelectBindingSource}" FontWeight="Bold"
-                                               Foreground="{DynamicResource PrimaryTextBrush}"
-                                               Margin="8,6,8,4"/>
+                                    <!-- 面板头：图标徽标 + 标题 -->
+                                    <Grid Grid.Row="0" Margin="10,8,10,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid Grid.Column="0" Width="22" Height="22" Margin="0,0,8,0">
+                                            <Border Background="{DynamicResource PrimaryBrush}"
+                                                    Opacity="0.14" CornerRadius="5"/>
+                                            <Path Data="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"
+                                                  Fill="{DynamicResource PrimaryBrush}"
+                                                  Width="12" Height="12"
+                                                  Stretch="Uniform"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                        </Grid>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{loc:Localized SelectBindingSource}"
+                                                   FontWeight="SemiBold"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryTextBrush}"/>
+                                    </Grid>
+                                    <Border Grid.Row="1" Height="1" Margin="8,0"
+                                            Background="{DynamicResource BorderBrush}" Opacity="0.7"/>
                                     <TreeView x:Name="PART_TreeView"
-                                              Grid.Row="1"
-                                              Margin="4,0,4,4"
+                                              Grid.Row="2"
+                                              Margin="6,4,6,6"
                                               Background="Transparent"
                                               BorderThickness="0"
                                               FocusVisualStyle="{x:Null}"
-                                              ItemContainerStyle="{StaticResource FormulaTreeItemStyle}"/>
+                                              ItemContainerStyle="{StaticResource FormulaTreeItemStyle}"
+                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"/>
                                 </Grid>
                             </Border>
                         </Popup>
@@ -732,8 +842,6 @@
                             <Setter TargetName="PART_PopupButton" Property="Width" Value="20"/>
                             <Setter TargetName="PART_PopupButton" Property="Height" Value="20"/>
                             <Setter TargetName="PART_PopupButton" Property="Margin" Value="2,0,0,0"/>
-                            <Setter TargetName="PART_PopupIcon" Property="Width" Value="12"/>
-                            <Setter TargetName="PART_PopupIcon" Property="Height" Value="12"/>
                         </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -793,7 +901,8 @@
                                     <TextBlock Grid.Row="0" Text="{loc:Localized SelectItems}" FontWeight="Bold"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
                                                Margin="4,2,4,4"/>
-                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                                  behaviors:TouchScroll.IsEnabled="True">
                                         <ItemsControl x:Name="PART_CheckBoxList">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
@@ -868,6 +977,45 @@
                                 MinWidth="30"
                                 Margin="4,0,0,0"
                                 IsEnabled="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBool}}"/>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ========== RangeSliderControl 样式（范围滑块控件，可独立使用） ==========
+         双滑块选区间，行内不常驻数字；按下拖动时在滑块上方显示「起点 ~ 终点」气泡
+         （气泡是模板内 Border，由 RangeSliderControl 在鼠标按下/抬起时切换 Visibility，
+         数值随 ValueStart/ValueEnd 刷新；hc 的 RangeSlider 模板不认 TipElement，也不能用 Popup——
+         独立 HWND 在属性行里会被裁剪）。
+         Minimum/Maximum/Step 配置边界与刻度；属性网格中 RangeValue 类型的属性行内部即此控件。 -->
+    <Style TargetType="{x:Type local:RangeSliderControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:RangeSliderControl}">
+                    <Grid>
+                        <hc:RangeSlider x:Name="PART_Slider"
+                                        Minimum="{Binding Minimum, RelativeSource={RelativeSource TemplatedParent}}"
+                                        Maximum="{Binding Maximum, RelativeSource={RelativeSource TemplatedParent}}"
+                                        TickFrequency="{Binding Step, RelativeSource={RelativeSource TemplatedParent}}"
+                                        IsSnapToTickEnabled="True"
+                                        ValueStart="{Binding ValueStart, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                        ValueEnd="{Binding ValueEnd, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                        IsEnabled="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBool}}"
+                                        VerticalAlignment="Center"/>
+
+                        <!-- 拖动数值气泡：贴在滑块上方（负上边距，不进占位），不参与命中测试 -->
+                        <Border x:Name="PART_DragTip"
+                                Visibility="Collapsed"
+                                Background="{DynamicResource PrimaryBrush}"
+                                CornerRadius="10" Padding="10,3,10,4"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                Margin="0,-26,0,0"
+                                IsHitTestVisible="False"
+                                Panel.ZIndex="9">
+                            <TextBlock x:Name="PART_DragTipText"
+                                       Foreground="White" FontSize="12"/>
+                        </Border>
                     </Grid>
                 </ControlTemplate>
             </Setter.Value>
@@ -1076,9 +1224,9 @@
                         Style="{StaticResource IconButtonStyle}"
                         VerticalAlignment="Center">
                     <Button.Visibility>
-                        <MultiBinding Converter="{StaticResource AndVis}">
-                            <Binding Path="IsModified" Converter="{StaticResource BoolToVis}"/>
-                            <Binding Path="ShowResetButton" Converter="{StaticResource BoolToVis}"/>
+                        <MultiBinding Converter="{StaticResource ResetButtonVis}">
+                            <Binding Path="IsModified"/>
+                            <Binding Path="ShowResetButton"/>
                             <Binding Path="IsFormulaEditorOpen" Converter="{StaticResource BoolToVis}" ConverterParameter="Invert"/>
                         </MultiBinding>
                     </Button.Visibility>
@@ -1104,14 +1252,14 @@
                                                      IsReadOnly="{Binding IsReadOnly}"/>
                         <!-- 类型提示(如 "(int)"):淡蓝色斜体,与公式输入框内容颜色区分 -->
                         <TextBlock Grid.Column="1"
-                                   Text="{Binding TypeHint}"
+                                   Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
                                    VerticalAlignment="Center"
-                                   Margin="6,0,0,0"
+                                   Margin="4,0,0,0"
                                    FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
                                    FontStyle="Italic"
                                    Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                    TextTrimming="CharacterEllipsis"
-                                   MaxWidth="120" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
+                                   MaxWidth="72" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
                             <TextBlock.Visibility>
                                 <MultiBinding Converter="{StaticResource AndVis}">
                                     <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
@@ -1245,9 +1393,9 @@
                         Style="{StaticResource IconButtonStyle}"
                         VerticalAlignment="Center">
                     <Button.Visibility>
-                        <MultiBinding Converter="{StaticResource AndVis}">
-                            <Binding Path="IsModified" Converter="{StaticResource BoolToVis}"/>
-                            <Binding Path="ShowResetButton" Converter="{StaticResource BoolToVis}"/>
+                        <MultiBinding Converter="{StaticResource ResetButtonVis}">
+                            <Binding Path="IsModified"/>
+                            <Binding Path="ShowResetButton"/>
                             <Binding Path="IsFormulaEditorOpen" Converter="{StaticResource BoolToVis}" ConverterParameter="Invert"/>
                         </MultiBinding>
                     </Button.Visibility>
@@ -1270,14 +1418,14 @@
                                                      FormulaString="{Binding FormulaString, Mode=TwoWay}"
                                                      IsReadOnly="{Binding IsReadOnly}"/>
                         <TextBlock Grid.Column="1"
-                                   Text="{Binding TypeHint}"
+                                   Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
                                    VerticalAlignment="Center"
-                                   Margin="6,0,0,0"
+                                   Margin="4,0,0,0"
                                    FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
                                    FontStyle="Italic"
                                    Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                    TextTrimming="CharacterEllipsis"
-                                   MaxWidth="120" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
+                                   MaxWidth="72" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
                             <TextBlock.Visibility>
                                 <MultiBinding Converter="{StaticResource AndVis}">
                                     <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
@@ -1573,6 +1721,7 @@
                                                   CanContentScroll="True"
                                                   VerticalScrollBarVisibility="Auto"
                                                   HorizontalScrollBarVisibility="Disabled"
+                                                  behaviors:TouchScroll.IsEnabled="True"
                                                   Padding="0,0,0,8">
                                         <ScrollViewer.Resources>
                                             <Style TargetType="ScrollBar" BasedOn="{StaticResource StableScrollBar}"/>
@@ -1691,29 +1840,15 @@
                                      宿主只要纯属性表时可以把整行工具条都收掉。 -->
                                 <DockPanel Grid.Row="0" LastChildFill="True">
                                     <!-- 顶部标题（如「属性」）：Dock=Top 落在工具条上方；
-                                         Header 为空时整块 Collapsed，不占高度；
-                                         ShowHeader=false 时由 cs 接管隐藏（PART_HeaderTitle） -->
+                                         文本与显隐由 cs 的 ApplyHeader 统一接管：
+                                         Header=null → 按当前语言取默认标题；Header="" → 隐藏；
+                                         ShowHeader=false 时同样收起（PART_HeaderTitle） -->
                                     <TextBlock DockPanel.Dock="Top"
                                                x:Name="PART_HeaderTitle"
-                                               Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"
                                                Margin="12,8,12,2"
                                                FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=2}"
                                                FontWeight="Bold"
-                                               Foreground="{DynamicResource PrimaryTextBrush}">
-                                        <TextBlock.Style>
-                                            <Style TargetType="TextBlock">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}" Value="">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}" Value="{x:Null}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </TextBlock.Style>
-                                    </TextBlock>
+                                               Foreground="{DynamicResource PrimaryTextBrush}"/>
                                     <hc:ButtonGroup VerticalAlignment="Center"
                                                     Visibility="{Binding ShowExpandCollapse, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
                                         <RadioButton x:Name="PART_ExpandRadio" Content="{loc:Localized ExpandAll}"
@@ -1750,7 +1885,8 @@
                                                 <ScrollViewer x:Name="PART_ScrollViewer"
                                                               CanContentScroll="True"
                                                               VerticalScrollBarVisibility="Auto"
-                                                              HorizontalScrollBarVisibility="Disabled">
+                                                              HorizontalScrollBarVisibility="Disabled"
+                                                              behaviors:TouchScroll.IsEnabled="True">
                                                     <ScrollViewer.Resources>
                                                         <!-- 稳定滚动条：拇指常显、hover 只变色（见 StableScrollBar） -->
                                                         <Style TargetType="ScrollBar" BasedOn="{StaticResource StableScrollBar}"/>
@@ -1980,14 +2116,14 @@
                                                              IsReadOnly="{Binding IsReadOnly}"/>
                                 <!-- 类型提示(如 "(int)"):淡蓝色斜体,与公式输入框内容颜色区分 -->
                                 <TextBlock Grid.Column="1"
-                                           Text="{Binding TypeHint}"
+                                           Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
                                            VerticalAlignment="Center"
-                                           Margin="6,0,0,0"
+                                           Margin="4,0,0,0"
                                            FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
                                            FontStyle="Italic"
                                            Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                            TextTrimming="CharacterEllipsis"
-                                           MaxWidth="120" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
+                                           MaxWidth="72" TextWrapping="NoWrap" ToolTip="{Binding TypeHint}">
                                     <TextBlock.Visibility>
                                         <MultiBinding Converter="{StaticResource AndVis}">
                                             <Binding Path="TypeHint" Converter="{StaticResource NullToVis}"/>
@@ -2232,11 +2368,12 @@
                                       Fill="{DynamicResource PrimaryBrush}" Width="12" Height="12" Stretch="Uniform"/>
                             </Button>
                             <TextBlock Grid.Column="1"
-                                       Text="{Binding TypeHint}"
+                                       Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
                                        VerticalAlignment="Center"
-                                       Margin="6,0,0,0"
+                                       Margin="4,0,0,0"
                                        FontStyle="Italic"
                                        TextTrimming="CharacterEllipsis"
+                                       MaxWidth="72" TextWrapping="NoWrap"
                                        ToolTip="{Binding TypeHint}"
                                        Foreground="{DynamicResource PrimaryBrush}" Opacity="0.85"
                                        FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}">
@@ -2438,7 +2575,6 @@
                                             Margin="16,14,16,18"
                                             Visibility="{Binding ShowHeader, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}}">
                                     <TextBlock x:Name="PART_HeaderText"
-                                               Text="{Binding Header, RelativeSource={RelativeSource TemplatedParent}}"
                                                FontSize="{Binding FontSize, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource FontSizeOffset}, ConverterParameter=7}"
                                                FontWeight="SemiBold"
                                                Foreground="{DynamicResource PrimaryTextBrush}"
@@ -2496,6 +2632,7 @@
                                                           CanContentScroll="True"
                                                           VerticalScrollBarVisibility="Auto"
                                                           HorizontalScrollBarVisibility="Disabled"
+                                                          behaviors:TouchScroll.IsEnabled="True"
                                                           Padding="0,2,0,8">
                                                 <ScrollViewer.Resources>
                                                     <!-- 稳定滚动条：拇指常显、hover 只变色（见 StableScrollBar） -->

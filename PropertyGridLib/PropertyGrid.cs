@@ -72,9 +72,9 @@ namespace PropertyGridLib
         /// </summary>
         public static readonly DependencyProperty HeaderProperty =
             DependencyProperty.Register(nameof(Header), typeof(string), typeof(PropertyGrid),
-                // 默认就叫「属性」：标题就是"属性"这件事本身的默认值，
-                // 宿主有特殊语境（如「项目属性」「参数」）再覆盖；设成空串可完全隐藏。
-                new PropertyMetadata("属性", OnHeaderChanged));
+                // null = 跟随当前语言显示默认标题（「属性」/「Properties」）；
+                // 空串 = 完全隐藏；其他 = 宿主自定义标题（如「项目属性」「参数」）。
+                new PropertyMetadata(null, OnHeaderChanged));
 
         public static readonly DependencyProperty SelectedPropertyItemProperty =
             DependencyProperty.Register(nameof(SelectedPropertyItem), typeof(IPropertyItem), typeof(PropertyGrid),
@@ -725,13 +725,16 @@ namespace PropertyGridLib
         }
 
         /// <summary>
-        /// 顶部标题区显隐 = ShowHeader && Header 非空（cs 接管，每次状态变化重算本地值，
+        /// 顶部标题区显隐 = ShowHeader && 有效标题非空（cs 接管，每次状态变化重算本地值，
         /// 覆盖模板里"Header 空则隐藏"的触发器——两者语义叠加而非竞争）。
+        /// Header 为 null 时按当前语言取默认标题，语言切换后随 OnLanguageChanged 重算。
         /// </summary>
         private void ApplyHeader()
         {
             if (_headerTitle == null) return;
-            _headerTitle.Visibility = ShowHeader && !string.IsNullOrEmpty(Header)
+            var text = Header ?? LocalizationManager.GetString("Properties");
+            _headerTitle.SetCurrentValue(TextBlock.TextProperty, text);
+            _headerTitle.Visibility = ShowHeader && !string.IsNullOrEmpty(text)
                 ? Visibility.Visible
                 : Visibility.Collapsed;
         }
@@ -1195,6 +1198,7 @@ namespace PropertyGridLib
                     item.UpdateLocalization();
             }
             UpdateDescriptionBar();
+            ApplyHeader();
             ApplyFilter();
         }
 

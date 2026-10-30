@@ -27,6 +27,8 @@ namespace PropertyGridLib.Controls
         public DataTemplate ToggleSwitchTemplate { get; set; }
         /// <summary>多行文本（富文本查看）编辑器模板，由 [MultilineText] 特性触发</summary>
         public DataTemplate MultilineTextTemplate { get; set; }
+        /// <summary>范围滑块编辑器模板：属性类型为 RangeValue 时自动启用（[RangeSlider] 可配边界）</summary>
+        public DataTemplate RangeSliderTemplate { get; set; }
         /// <summary>链接编辑器模板：字符串值本身是 http/https/ftp/mailto 链接时自动启用（蓝色可点击）</summary>
         public DataTemplate LinkTemplate { get; set; }
         /// <summary>
@@ -81,6 +83,9 @@ namespace PropertyGridLib.Controls
                     case CustomEditorType.MultilineText:
                         // [MultilineText] 特性：多行文本编辑器；模板缺失时回退到默认 string 编辑器
                         return MultilineTextTemplate ?? StringTemplate ?? DefaultTemplate;
+                    case CustomEditorType.RangeSlider:
+                        // RangeValue 类型：范围滑块；模板缺失时回退到默认只读文本，保证不空白
+                        return RangeSliderTemplate ?? DefaultTemplate;
                 }
 
                 // 根据属性类型选择（使用 EffectivePropertyType 以支持 FormulaBound<T>）

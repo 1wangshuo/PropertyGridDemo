@@ -55,7 +55,9 @@ namespace PropertyGridLib.Controls
         {
             if (CompactSummary == null) return;
             var n = Items?.Count ?? 0;
-            CompactSummary.Text = n == 0 ? "（空字典）" : $"[{n} 项]";
+            CompactSummary.Text = n == 0
+                ? LocalizationManager.GetString("EmptyDictionary")
+                : LocalizationManager.GetString("ItemsCount", n);
         }
 
         /// <summary>紧凑形态的「...」：打开字典编辑器弹窗（与网格行同款对话框），关闭后刷新摘要</summary>
