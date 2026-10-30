@@ -1,19 +1,8 @@
----
-AIGC:
-    Label: "1"
-    ContentProducer: 001191440300708461136T1XGW3
-    ProduceID: 09749610af649f3b41be24ad18fd73a1_fc1021e6b0e111f1af37525400826444
-    ReservedCode1: 4Hp+f6lMNwcja/oPDGcvEgAZJTq5Xn/Hv7brSIW1zKcct02t/OjLuDrKP1qcLl6tvIn7IufLFQASFPXe+SKalP/x1yoMX1Zz+c2McnyQTGJFJojQgmkITP8U0nGXiNtIvURv0/OIOfvpgYQamjiTkBz0XEyzO+ZGZho56xCf5TE8JC3/73fseYOphRo=
-    ContentPropagator: 001191440300708461136T1XGW3
-    PropagateID: 09749610af649f3b41be24ad18fd73a1_fc1021e6b0e111f1af37525400826444
-    ReservedCode2: 4Hp+f6lMNwcja/oPDGcvEgAZJTq5Xn/Hv7brSIW1zKcct02t/OjLuDrKP1qcLl6tvIn7IufLFQASFPXe+SKalP/x1yoMX1Zz+c2McnyQTGJFJojQgmkITP8U0nGXiNtIvURv0/OIOfvpgYQamjiTkBz0XEyzO+ZGZho56xCf5TE8JC3/73fseYOphRo=
----
-
-# PropertyGridLib 技能文档（v1.6.0）
+# PropertyGridLib 技能文档（v1.8.0）
 
 > WPF PropertyGrid 控件库 **PropertyGridLib** 与官方演示程序 **PropertyGridDemo** 的多页使用文档入口。
 >
-> 版本：**1.6.0** ｜ 更新日期：2026-10-15 ｜ 作者：WangShuo ｜ 许可：MIT
+> 版本：**1.8.0** ｜ 更新日期：2026-10-30 ｜ 作者：WangShuo ｜ 许可：MIT
 
 ![PropertyGrid 基础控件（浅色主题）](images/propertygrid-main-light.png)
 
@@ -119,7 +108,8 @@ propertyGrid.RefreshProperties();        // 重新反射对象、刷新列表
 
 | 版本 | 日期 | 要点 |
 |------|------|------|
-| **1.6.0** | 2026-10-15 | 修掉「重置所有属性」连续点击闪退（颜色编辑器色块改绑控件独占画刷）、复杂对象值区改显友好类型名、多层嵌套可逐层展开、浮点数值不再显示长尾数、公式绑定默认进入已绑定态、集合/字典编辑器列表随属性刷新、去除行内修改红点、事件页分类折叠 + 底部描述栏、分类头改用面板色；新增 `net10.0-windows` 目标 |
+| **1.8.0** | 2026-10-30 | 新增范围滑块（`RangeValue` / `[RangeSlider]` / `RangeSliderControl` 独立使用，拖动气泡显示区间）；复位按钮 R 固定占位；文件夹树视觉升级 + 右键新建/重命名/删除；绑定源键名与类型提示中间省略；界面文本补齐多语言 |
+| 1.6.0 | 2026-10-15 | 修掉「重置所有属性」连续点击闪退（颜色编辑器色块改绑控件独占画刷）、复杂对象值区改显友好类型名、多层嵌套可逐层展开、浮点数值不再显示长尾数、公式绑定默认进入已绑定态、集合/字典编辑器列表随属性刷新、去除行内修改红点、事件页分类折叠 + 底部描述栏、分类头改用面板色；新增 `net10.0-windows` 目标 |
 | 1.5.0 | 2026-10-14 | 修复 `FormulaSwitchControl` 在公式模式下普通输入框与公式输入框重叠的问题；新增 `EventPicker` 独立事件编辑器演示窗口 |
 | 1.4.0 | 2026-09-24 | 属性列表 UI 虚拟化（重建 206ms → 8ms）；新增 `ShowEventsPage` 事件页能力、`EnableVirtualization` / `TitlePlacement` / `TitleFontWeight` / `CategoryFontWeight` 开关 |
 | **1.3.0** | 2026-09-15 | 新增 `PropertyGridPro` 平铺参数面板、卡片式行布局、主题色跟随、无限嵌套样式统一、公式绑定接入、复位按钮常驻占位、`[ToggleSwitch]` 布尔开关；清理演示旧模型；新增本套技能文档 |
@@ -143,4 +133,3 @@ propertyGrid.RefreshProperties();        // 重新反射对象、刷新列表
 | `reset-button-*` | 复位按钮常驻占位（基础 / Pro，浅色 / 深色） |
 | `formula-binding-*` / `formula-tree-popup-*` | 公式绑定区与公式树弹窗 |
 | `event-picker-*` | `EventPicker` 事件页（分类折叠 + 底部描述栏） |
-*（内容由AI生成，仅供参考）*

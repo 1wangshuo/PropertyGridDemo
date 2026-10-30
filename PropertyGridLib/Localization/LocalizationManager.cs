@@ -48,6 +48,8 @@ namespace PropertyGridLib.Localization
             // CollectionEditorDialog
             { "CollectionEditorTitle", "集合编辑器" },
             { "CollectionItems", "集合项" },
+            { "OpenCollectionEditor", "打开集合编辑器" },
+            { "EmptyCollection", "（空集合）" },
             { "Properties", "属性" },
             { "Add", "添加" },
             { "Copy", "复制" },
@@ -65,6 +67,8 @@ namespace PropertyGridLib.Localization
             { "DictEntries", "字典条目" },
             { "DictKey", "键 (Key)" },
             { "DictValue", "值 (Value)" },
+            { "OpenDictionaryEditor", "打开字典编辑器" },
+            { "EmptyDictionary", "（空字典）" },
             { "DuplicateKey", "键 “{0}” 已存在，请使用唯一的键" },
             // 消息提示
             { "Tip", "提示" },
@@ -82,6 +86,17 @@ namespace PropertyGridLib.Localization
             { "SelectedPath", "选中路径：" },
             { "CreateFolderFailed", "创建文件夹失败：{0}" },
             { "LoadDrivesFailed", "加载驱动器失败：{0}" },
+            // 文件夹右键菜单（新建 / 重命名 / 删除）
+            { "NewFolder", "新建文件夹" },
+            { "RenameFolder", "重命名" },
+            { "DeleteFolder", "删除" },
+            { "FolderName", "文件夹名称" },
+            { "FolderNameEmpty", "文件夹名称不能为空" },
+            { "InvalidFolderName", "名称包含非法字符（\\ / : * ? \" < > |）" },
+            { "FolderAlreadyExists", "文件夹 “{0}” 已存在" },
+            { "ConfirmDeleteFolder", "确定删除文件夹 “{0}” 及其全部内容吗？" },
+            { "RenameFolderFailed", "重命名失败：{0}" },
+            { "DeleteFolderFailed", "删除失败：{0}" },
             // PropertyGridPro（平铺参数配置面板）
             { "ProNoResult", "没有匹配的属性" },
             { "ProMatchedCount", "共 {0} 项" },
@@ -95,6 +110,9 @@ namespace PropertyGridLib.Localization
             { "EventSearchPlaceholder", "搜索事件..." },
             { "EditHandler", "编辑事件代码" },
             { "NoHandler", "<未绑定>" },
+            // 图片预览
+            { "ImagePreviewTitle", "图像预览" },
+            { "NoPreview", "无预览" },
         };
 
         private static readonly Dictionary<string, string> EnUSStrings = new Dictionary<string, string>
@@ -124,6 +142,8 @@ namespace PropertyGridLib.Localization
             // CollectionEditorDialog
             { "CollectionEditorTitle", "Collection Editor" },
             { "CollectionItems", "Collection Items" },
+            { "OpenCollectionEditor", "Open collection editor" },
+            { "EmptyCollection", "(empty)" },
             { "Properties", "Properties" },
             { "Add", "Add" },
             { "Copy", "Copy" },
@@ -141,6 +161,8 @@ namespace PropertyGridLib.Localization
             { "DictEntries", "Entries" },
             { "DictKey", "Key" },
             { "DictValue", "Value" },
+            { "OpenDictionaryEditor", "Open dictionary editor" },
+            { "EmptyDictionary", "(empty)" },
             { "DuplicateKey", "Key \"{0}\" already exists. Keys must be unique." },
             // Messages
             { "Tip", "Tip" },
@@ -158,6 +180,17 @@ namespace PropertyGridLib.Localization
             { "SelectedPath", "Selected Path:" },
             { "CreateFolderFailed", "Create folder failed: {0}" },
             { "LoadDrivesFailed", "Load drives failed: {0}" },
+            // Folder context menu (new / rename / delete)
+            { "NewFolder", "New Folder" },
+            { "RenameFolder", "Rename" },
+            { "DeleteFolder", "Delete" },
+            { "FolderName", "Folder name" },
+            { "FolderNameEmpty", "Folder name cannot be empty" },
+            { "InvalidFolderName", "Name contains invalid characters (\\ / : * ? \" < > |)" },
+            { "FolderAlreadyExists", "Folder \"{0}\" already exists" },
+            { "ConfirmDeleteFolder", "Delete folder \"{0}\" and all its contents?" },
+            { "RenameFolderFailed", "Rename failed: {0}" },
+            { "DeleteFolderFailed", "Delete failed: {0}" },
             // PropertyGridPro (flat parameter configuration panel)
             { "ProNoResult", "No matching properties" },
             { "ProMatchedCount", "{0} item(s)" },
@@ -171,6 +204,9 @@ namespace PropertyGridLib.Localization
             { "EventSearchPlaceholder", "Search events..." },
             { "EditHandler", "Edit event code" },
             { "NoHandler", "<not bound>" },
+            // Image preview
+            { "ImagePreviewTitle", "Image Preview" },
+            { "NoPreview", "No preview" },
         };
 
         /// <summary>

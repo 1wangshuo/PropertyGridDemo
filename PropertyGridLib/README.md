@@ -2,15 +2,26 @@
 
 WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl UI 库。
 
-> **版本 1.7.0** | .NET Framework 4.8+ / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
+> **版本 1.8.0** | .NET Framework 4.8+ / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
 
 ### 📦 相关仓库
 
 | 仓库 | 地址 |
 |------|------|
-| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.7.0` |
+| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.8.0` |
 | **Demo 项目** | https://github.com/1wangshuo/PropertyGridDemo |
 | **技能文档** | [skill/SKILL.md](https://github.com/1wangshuo/PropertyGridDemo/blob/main/skill/SKILL.md)（多页使用文档：基础用法 / 特性清单 / 编辑器类型 / 主题多语言 / 公式绑定 / PropertyGridPro / 示例模型 / FAQ） |
+
+---
+
+## ✨ v1.8.0 新特性
+
+- ✅ **🎚️ 范围滑块（`RangeValue` + `[RangeSlider]`）** — 属性声明为 `RangeValue` 即自动映射成双滑块编辑器；`[RangeSlider(最小, 最大, 步长)]` 配边界与刻度。两端值实时写回，宿主直接读 `.Min` / `.Max` 两个 `double`。行内不常驻数字，按住拖动时滑块上方气泡实时显示「起点 ~ 终点」。
+- ✅ **🧼 `RangeSliderControl` 可独立使用** — 不依赖属性网格，`Value` / `ValueStart` / `ValueEnd` 均可双向绑定。
+- ✅ **📍 复位按钮 R 固定占位** — 未修改时隐藏但保留槽位，改值 / 拖动时 R 出现不再挤压值编辑器列（控件宽度不跳）。
+- ✅ **🌳 文件夹选择对话框升级** — 圆角卡片树、悬停浅灰 / 选中主题色胶囊、常显细滚动条；文件夹项右键「新建文件夹 / 重命名 / 删除」；打开时自动滚动到当前路径节点。
+- ✅ **✂️ 超长文本中间省略** — 绑定源树键名、类型提示只保留前 3 字 + 后 3 字，完整文本见 ToolTip，不再需要横向拉。
+- ✅ **🌐 界面文本补齐多语言** — 标题默认值、集合 / 字典弹窗提示、紧凑摘要等硬编码中文全部改走本地化词典。
 
 ---
 
@@ -142,6 +153,7 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
   - [DirectoryPathAttribute — 目录路径选择](#directorypathattribute--目录路径选择)
   - [CollectionEditorAttribute — 集合编辑器](#collectioneditorattribute--集合编辑器)
   - [NumberSliderAttribute — 数值滑块](#numbersliderattribute--数值滑块)
+  - [RangeSliderAttribute — 范围滑块](#rangesliderattribute--范围滑块)
   - [FormulaEditorAttribute — 公式绑定](#formulaeditorattribute--公式绑定)
   - [MultiSelectAttribute — 多选列表](#multiselectattribute--多选列表)
   - [ButtonAttribute — 命令按钮](#buttonattribute--命令按钮)
@@ -154,6 +166,7 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 - [编辑器类型总览](#编辑器类型总览)
 - [PropertyGrid 集合模式（内联显示）](#propertygrid-集合模式内联显示)
 - [集合编辑器 UserControl 独立使用](#集合编辑器-usercontrol-独立使用)
+- [RangeSliderControl 独立使用](#rangeslidercontrol-独立使用)
 - [FormulaBindingControl 独立使用](#formulabindingcontrol-独立使用)
 - [FormulaBound&lt;T&gt; — 公式绑定泛型类型](#formulaboundt--公式绑定泛型类型)
 - [TypeConverter 下拉列表](#typeconverter-下拉列表)
@@ -169,19 +182,19 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 ### NuGet 包管理器
 
 ```powershell
-Install-Package PropertyGridLib -Version 1.7.0
+Install-Package PropertyGridLib -Version 1.8.0
 ```
 
 ### .NET CLI
 
 ```bash
-dotnet add package PropertyGridLib --version 1.7.0
+dotnet add package PropertyGridLib --version 1.8.0
 ```
 
 ### PackageReference (PackageReference)
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.7.0" />
+<PackageReference Include="PropertyGridLib" Version="1.8.0" />
 ```
 
 安装后，NuGet 会自动拉取依赖项 `HandyControl 3.5.1`。
@@ -370,6 +383,38 @@ public double Opacity { get; set; } = 50;
 | `maximum` | `double` | 最大值 |
 | `step` | `double` | 步长（默认 1） |
 | `ShowNumberBox` | `bool` | 是否显示可编辑数字输入框（默认 false；启用后与滑块双向同步并取代数值标签） |
+
+---
+
+### RangeSliderAttribute — 范围滑块
+
+属性类型为 `RangeValue` 时自动映射为双滑块范围编辑器（不写特性即可用，默认 0 ~ 100 / 步长 1）；特性只用于配置边界与刻度。
+
+```csharp
+[RangeSlider(0, 1920, 8)]   // 最小值、最大值、步长
+public RangeValue DetectHorizontalRange { get; set; } = new RangeValue(320, 1600);
+
+// 不写特性：默认 0 ~ 100、步长 1
+public RangeValue NightVisionGainRange { get; set; } = new RangeValue(20, 80);
+```
+
+宿主读取两端值（`double`）：
+
+```csharp
+RangeValue range = obj.DetectHorizontalRange;
+double min = range.Min;   // 起点
+double max = range.Max;   // 终点
+```
+
+**参数说明：**
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `minimum` | `double` | 最小值（默认 0） |
+| `maximum` | `double` | 最大值（默认 100） |
+| `step` | `double` | 步长 / 刻度（默认 1，滑块按刻度吸附） |
+
+交互：行内不常驻数字；按住任一滑块拖动时，滑块上方气泡实时显示「起点 ~ 终点」，松手隐藏。值经 `Value`（`RangeValue`）双向写回宿主属性。
 
 ---
 
@@ -881,6 +926,7 @@ PropertyGridPro1.SelectedObject = new SampleObject();
 | ComboBox | `enum` | 枚举下拉选择 |
 | DateTimePicker | `DateTime` / `DateTime?` | 日期时间选择器 |
 | Slider | `[NumberSlider]` 特性 | 滑块 + 数值标签 |
+| **RangeSlider** | `RangeValue` 类型（`[RangeSlider]` 配边界与步长） | **双滑块区间选择，拖动时气泡显示「起点 ~ 终点」；宿主读 `.Min` / `.Max`** |
 | **Color** | `Color` / `Color?` / `SolidColorBrush` | **颜色预览块 + "..." 按钮（弹出 HC ColorPicker）** |
 | FilePath | `[FilePath]` 特性 | 文本框 + 浏览按钮 |
 | DirectoryPath | `[DirectoryPath]` 特性 | 文本框 + 浏览按钮 |
@@ -978,6 +1024,26 @@ simpleEditor.Items = new List<int> { 1, 2, 3 };
 | `Placeholder` | 输入框占位文字。为 null 时回落到本地化的「未绑定」 |
 
 请求编辑经 `RequestEditEvent` 路由事件抛出，参数携带对应的 `EventItem`（独立用法下为 null，宿主可从发送方读 `HandlerName`）。宿主收到后自行决定打开哪种编辑器。
+
+---
+
+## RangeSliderControl 独立使用
+
+`RangeSliderControl` 可脱离 `PropertyGrid` 使用，直接给依赖属性赋值 / 双向绑定：
+
+```xml
+<controls:RangeSliderControl Minimum="0" Maximum="1920" Step="8"
+                             Value="{Binding Range, Mode=TwoWay}" />
+```
+
+| 属性 | 说明 |
+|------|------|
+| `Value` | `RangeValue` 整体区间（默认双向绑定） |
+| `ValueStart` / `ValueEnd` | 两端值（`double`，默认双向绑定） |
+| `Minimum` / `Maximum` / `Step` | 边界与刻度（默认 0 / 100 / 1） |
+| `IsReadOnly` | 只读时滑块禁用 |
+
+拖动时气泡显示「起点 ~ 终点」，松手隐藏；读值用 `Value.Min` / `Value.Max`（或 `ValueStart` / `ValueEnd`）。
 
 ---
 

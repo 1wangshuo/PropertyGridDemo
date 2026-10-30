@@ -81,6 +81,7 @@
                     </Border>
 
                     <controls:PropertyGrid x:Name="ItemPropertyGrid" Grid.Row="1"
+                                           ShowHeader="False"
                                            ShowSearchBar="True"
                                            ShowDescription="True"
                                            Margin="0"/>
@@ -108,7 +109,7 @@
             </Border>
             <Button Grid.Column="1" Content="..." MinWidth="30" Margin="4,0,0,0"
                     Click="CompactEdit_Click"
-                    ToolTip="打开集合编辑器"/>
+                    ToolTip="{loc:Localized OpenCollectionEditor}"/>
         </Grid>
     </Grid>
 </UserControl>

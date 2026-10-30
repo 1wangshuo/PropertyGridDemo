@@ -76,6 +76,27 @@ namespace PropertyGridDemo.Models
                         new FormulaTreeNode { Header = "任务A.值", Formula = "&{Flow6,TaskA,Value}", FormulaType = typeof(int) },
                         new FormulaTreeNode { Header = "任务B.计数", Formula = "&{Flow6,TaskB,Count}", FormulaType = typeof(int) }
                     }
+                },
+                new FormulaTreeNode
+                {
+                    Header = "长名称演示",
+                    Children =
+                    {
+                        // 键名超过 22 字符、类型名是长泛型：弹窗里自动中间省略成「前缀…后缀」，
+                        // 鼠标悬停 ToolTip 看全文 —— 专门给 demo 演示这两个效果。
+                        new FormulaTreeNode
+                        {
+                            Header = "视觉检测任务.相机内参标定矩阵.历史平均值（超长键名）",
+                            Formula = "&{LongDemo,CameraIntrinsicMatrix,HistoryAverage}",
+                            FormulaType = typeof(Dictionary<string, List<double>>)
+                        },
+                        new FormulaTreeNode
+                        {
+                            Header = "整线产能统计.各工位节拍时间序列（超长键名）",
+                            Formula = "&{LongDemo,LineCapacity,CycleTimeSeries}",
+                            FormulaType = typeof(List<Dictionary<string, TimeSpan>>)
+                        }
+                    }
                 }
             };
         }

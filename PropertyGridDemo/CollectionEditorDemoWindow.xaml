@@ -230,6 +230,32 @@
                     </Border>
                 </Grid>
             </TabItem>
+            <!-- ==================== Tab: 范围滑块独立控件 ==================== -->
+            <TabItem Header="范围滑块控件">
+                <StackPanel Margin="0,12,0,0">
+                    <TextBlock Text="RangeSliderControl：双滑块选择区间，Minimum / Maximum / Step 配置边界与刻度；Value 双向绑定 RangeValue，宿主直接读 .Min / .Max。属性网格里声明 RangeValue 类型的属性也用它，[RangeSlider] 特性可配边界"
+                               FontSize="13" Foreground="{DynamicResource SecondaryTextBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                    <Border Background="{DynamicResource SecondaryRegionBrush}"
+                            CornerRadius="8" Padding="16">
+                        <StackPanel>
+                            <TextBlock Text="带边界的区间（0 ~ 1920，步长 8）" FontWeight="Bold"
+                                       FontSize="14" Foreground="{DynamicResource PrimaryTextBrush}" Margin="0,0,0,8"/>
+                            <local:RangeSliderControl Minimum="0" Maximum="1920" Step="8"
+                                                      Value="{Binding SdkRange, Mode=TwoWay}"
+                                                      Margin="0,4,0,0"/>
+                            <TextBlock Text="{Binding SdkRangeText}"
+                                       FontFamily="Consolas" FontSize="13"
+                                       Foreground="{DynamicResource SecondaryTextBrush}" Margin="0,8,0,0"/>
+                            <TextBlock Text="拖动任一端 → 控件合成新的 RangeValue 写回宿主属性，上面的文字实时读 SdkRange.Min / SdkRange.Max"
+                                       FontSize="12" Foreground="{DynamicResource SecondaryTextBrush}"
+                                       TextWrapping="Wrap" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </TabItem>
+
             <!-- ==================== Tab: 事件编辑器独立控件 ==================== -->
             <TabItem Header="事件编辑器独立">
                 <StackPanel Margin="0,12,0,0">

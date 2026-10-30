@@ -36,6 +36,9 @@ namespace PropertyGridLib
         /// <summary>属性平铺列表（虚拟化宿主，模板内 PART_ItemsControl）</summary>
         private ItemsControl? _itemsControl;
 
+        /// <summary>面板标题（模板内 PART_HeaderText）：Header 为 null 时按当前语言填默认标题</summary>
+        private TextBlock? _headerText;
+
         /// <summary>列表滚动宿主（模板内 PART_ScrollViewer）：展开重建行集合时用它恢复滚动位置</summary>
         private ScrollViewer? _scrollViewer;
 
@@ -62,6 +65,8 @@ namespace PropertyGridLib
             base.OnApplyTemplate();
 
             _itemsControl = GetTemplateChild("PART_ItemsControl") as ItemsControl;
+            _headerText = GetTemplateChild("PART_HeaderText") as TextBlock;
+            ApplyHeaderText();
             _proDescriptionRow = GetTemplateChild("PART_ProDescriptionRow") as RowDefinition;
             _proSplitterRow = GetTemplateChild("PART_ProSplitterRow") as RowDefinition;
             ApplyDescriptionRows();
@@ -193,8 +198,9 @@ namespace PropertyGridLib
         /// <summary>面板标题</summary>
         public static readonly DependencyProperty HeaderProperty =
             DependencyProperty.Register(nameof(Header), typeof(string), typeof(PropertyGridPro),
-                // 与基础 PropertyGrid 一致：默认「属性」，宿主按语境覆盖（如「项目属性」），空串 = 不要标题
-                new FrameworkPropertyMetadata("属性"));
+                // 与基础 PropertyGrid 一致：null = 跟随语言的默认「属性」/「Properties」；
+                // 空串 = 不要标题；其他 = 宿主按语境覆盖（如「项目属性」）
+                new FrameworkPropertyMetadata(null, OnHeaderChanged));
 
         /// <summary>面板说明（标题下方灰色描述）</summary>
         public static readonly DependencyProperty HeaderDescriptionProperty =
@@ -683,10 +689,27 @@ namespace PropertyGridLib
             SelectedPropertyItem = null;
         }
 
+        private static void OnHeaderChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is PropertyGridPro grid) grid.ApplyHeaderText();
+        }
+
+        /// <summary>
+        /// 标题文本：Header 为 null 时回退到当前语言的默认标题（「属性」/「Properties」）；
+        /// 语言切换时由 RefreshLocalizedTexts 重新调用。
+        /// </summary>
+        private void ApplyHeaderText()
+        {
+            if (_headerText == null) return;
+            _headerText.SetCurrentValue(TextBlock.TextProperty,
+                Header ?? LocalizationManager.GetString("Properties"));
+        }
+
         private void RefreshLocalizedTexts()
         {
             _matchCountFormat = LocalizationManager.GetString("ProMatchedCount");
             UpdateMatchCountText();
+            ApplyHeaderText();
         }
 
         private void UpdateMatchCountText()

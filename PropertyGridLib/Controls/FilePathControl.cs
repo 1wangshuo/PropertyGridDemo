@@ -123,11 +123,10 @@ namespace PropertyGridLib.Controls
             {
                 var dlg = new Dialogs.FolderBrowserDialog
                 {
-                    SelectedPath = Text,
-                    Description = string.IsNullOrEmpty(Title)
-                        ? LocalizationManager.GetString("SelectFolder")
-                        : Title
+                    SelectedPath = Text
                 };
+                if (!string.IsNullOrEmpty(Title))
+                    dlg.Title = Title;
                 if (dlg.ShowDialog(Application.Current?.MainWindow) == true)
                     Text = dlg.SelectedPath;
                 return;

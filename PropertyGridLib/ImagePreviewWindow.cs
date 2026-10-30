@@ -19,7 +19,9 @@ namespace PropertyGridLib
     {
         private ImagePreviewWindow(ImageSource image, string title, string info)
         {
-            Title = string.IsNullOrWhiteSpace(title) ? "图像预览" : title;
+            Title = string.IsNullOrWhiteSpace(title)
+                ? PropertyGridLib.Localization.LocalizationManager.GetString("ImagePreviewTitle")
+                : title;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ResizeMode = ResizeMode.CanResize;
             ShowInTaskbar = false;

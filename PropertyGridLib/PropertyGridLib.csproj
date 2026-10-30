@@ -10,9 +10,9 @@
     
     <!-- NuGet 包配置 -->
     <PackageId>PropertyGridLib</PackageId>
-    <Version>1.7.1</Version>
-    <AssemblyVersion>1.7.1.0</AssemblyVersion>
-    <FileVersion>1.7.1.0</FileVersion>
+    <Version>1.8.0</Version>
+    <AssemblyVersion>1.8.0.0</AssemblyVersion>
+    <FileVersion>1.8.0.0</FileVersion>
     <Authors>WangShuo</Authors>
     <Company>WangShuo</Company>
     <Product>PropertyGridLib</Product>
@@ -20,7 +20,18 @@
     <Trademark>WangShuo</Trademark>
     <Description>WPF 属性网格控件库（基于 HandyControl）。PropertyGrid 提供经典两栏与紧凑单行两种排布、分类卡片、搜索与多语言；PropertyGridPro 提供卡片式与选项页表单式排布。内置集合/字典/公式绑定/颜色/图片/链接等编辑器，支持 [Highlight] 关键属性标记与 [EditorChrome] 编辑器装饰开关。适用于 .NET Framework 4.8 与 .NET 6/7/8/10 (Windows)。</Description>
     <PackageTags>WPF;PropertyGrid;PropertyGridPro;Editor;Controls;Button;Dictionary;Collection;Formula;MultiSelect;ToggleSwitch;Localization;EventPicker;Events;HandyControl;TypeConverter;NETCoreApp3;NET6;NET7;NET8;NET10</PackageTags>
-    <PackageReleaseNotes>1.7.1
+    <PackageReleaseNotes>1.8.0
+· 绑定源树键名过长时只保留前 3 字 + 后 3 字（中间省略），完整文本见 ToolTip，不再需要横向拉
+· 类型提示（含泛型长类型名）同样中间省略；行内公式条上只留前 3 字 + 后 3 字，给输入框让位
+· 公式输入框悬停显示完整公式
+· 公式绑定条与「选择绑定源」弹窗视觉优化：淡色绑定按钮、弹窗圆角阴影、类型胶囊；弹窗尺寸收小
+· 文件夹选择对话框去掉与窗口标题重复的内层标题；文件夹项支持右键「新建文件夹 / 重命名 / 删除」，与资源管理器习惯一致；打开时自动滚动到当前路径所在节点
+· 文件夹树视觉升级：圆角卡片容器、圆角行块，悬停浅灰、选中主题色胶囊（文字/图标/箭头转白）；常显细滚动条悬停变主题色；路径输入框改圆角胶囊
+· 新增范围滑块：属性声明为 RangeValue 即自动映射双滑块编辑器，[RangeSlider(最小,最大,步长)] 配边界与刻度，宿主读 .Min / .Max 即得两个 double；行内不常驻数字，按住拖动时滑块上方气泡实时显示「起点 ~ 终点」；RangeSliderControl 亦可独立使用
+· 复位按钮 R 固定占位：未修改时隐藏但保留宽度，改值/拖动时不再挤压编辑器列（值控件宽度不跳）
+· 界面文本补齐多语言：标题默认值、集合/字典编辑器弹窗与提示、紧凑摘要等硬编码中文全部改走本地化词典
+· 集合/字典编辑器（弹窗与内嵌控件）的属性页隐藏自带标题，避免与外层「属性」重复；Header 默认 null 时跟随当前语言
+1.7.1
 · 修复：换绑同类型对象时补发 FormulaString 通知，集合条目公式不再串写
 1.7.0
 · 集合 / 字典 / 事件三个编辑器控件可脱离 PropertyGrid 独立使用
@@ -44,7 +55,7 @@
          包会落到 PropertyGridLib\nuget\ 造成「两个地方都有包、分不清哪个最新」。
          这里以工程文件位置为准推导，任何方式打包都输出到同一目录。 -->
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\nuget\</PackageOutputPath>
-    <InformationalVersion>1.7.1</InformationalVersion>
+    <InformationalVersion>1.8.0</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

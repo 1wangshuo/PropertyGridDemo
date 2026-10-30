@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:PropertyGridLib.Localization"
-        xmlns:conv="clr-namespace:PropertyGridLib.Converters"
+        xmlns:loc="clr-namespace:PropertyGridLib.Localization"
         Title="{Binding Title}" Height="500" Width="650"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
@@ -12,67 +12,192 @@
     <hc:Window.Resources>
         <!-- 不合并 HandyControl 主题字典，继承应用级资源以跟随宿主换肤 -->
         <local:LocalizationProxy x:Key="Localization"/>
-        <conv:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
+
+        <!-- 展开箭头：折叠时 ▸，展开时 ▾；颜色跟随行前景（选中行变白） -->
+        <Style x:Key="FolderExpanderToggleStyle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryTextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent">
+                            <Path x:Name="Arrow" Data="M0,0 L0,8 L4,4 Z"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Arrow" Property="Data" Value="M0,0 L8,0 L4,4 Z"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 树节点：圆角行块 + 主题色选中 + 浅色悬停 -->
+        <Style x:Key="FolderTreeItemStyle" TargetType="TreeViewItem">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+            <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
+            <Setter Property="Foreground" Value="{DynamicResource PrimaryTextBrush}"/>
+            <Setter Property="Padding" Value="0"/>
+            <!-- 右键先选中该项（与资源管理器一致），再在 FolderTreeView_PreviewMouseRightButtonUp 里弹出菜单 -->
+            <EventSetter Event="PreviewMouseRightButtonDown" Handler="FolderItem_PreviewMouseRightButtonDown"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TreeViewItem">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <Border x:Name="RowBorder" Grid.Row="0"
+                                    Margin="2,1" MinHeight="26" Padding="2,0"
+                                    CornerRadius="6" SnapsToDevicePixels="True">
+                                <!-- 悬停/选中底色写在 Border 自己的 Style 里：RowBorder 不含子项区域，
+                                     悬停子项时祖先行不会跟着高亮；选中触发在最后，优先级高于悬停 -->
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
+                                            </Trigger>
+                                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="16"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ToggleButton x:Name="Expander" Grid.Column="0"
+                                                  VerticalAlignment="Center"
+                                                  IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                                  Style="{StaticResource FolderExpanderToggleStyle}"/>
+                                    <ContentPresenter x:Name="PART_Header" Grid.Column="1"
+                                                      ContentSource="Header"
+                                                      Margin="3,0,8,0"
+                                                      VerticalAlignment="Center"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                </Grid>
+                            </Border>
+
+                            <ItemsPresenter x:Name="ItemsHost" Grid.Row="1" Margin="16,0,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Expander" Property="Foreground" Value="White"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 树内滚动条：常显细拇指，悬停变主题色（与属性列表滚动条一致） -->
+        <Style TargetType="ScrollBar">
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Vertical">
+                    <Setter Property="Width" Value="10"/>
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ScrollBar">
+                                <Grid Background="Transparent">
+                                    <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                        <Track.Thumb>
+                                            <Thumb>
+                                                <Thumb.Template>
+                                                    <ControlTemplate TargetType="Thumb">
+                                                        <Border x:Name="ThumbBar" Width="5" CornerRadius="2.5"
+                                                                Margin="0,3"
+                                                                Background="{DynamicResource SecondaryTextBrush}"
+                                                                Opacity="0.35"/>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="ThumbBar" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                                                <Setter TargetName="ThumbBar" Property="Opacity" Value="1"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsDragging" Value="True">
+                                                                <Setter TargetName="ThumbBar" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
+                                                                <Setter TargetName="ThumbBar" Property="Opacity" Value="1"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Thumb.Template>
+                                            </Thumb>
+                                        </Track.Thumb>
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageUpCommand" Focusable="False"
+                                                          Opacity="0" Background="Transparent"/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageDownCommand" Focusable="False"
+                                                          Opacity="0" Background="Transparent"/>
+                                        </Track.IncreaseRepeatButton>
+                                    </Track>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </hc:Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 描述文本 -->
-        <TextBlock Grid.Row="0" Text="{Binding Description}" 
-                   Margin="10" TextWrapping="Wrap"
-                   Foreground="{DynamicResource PrimaryTextBrush}"
-                   Visibility="{Binding Description, Converter={StaticResource NullToVisibilityConverter}}"/>
-
-        <!-- 文件夹树形视图 -->
-        <Border Grid.Row="1" Margin="10,0,10,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+        <!-- 文件夹树形视图（圆角卡片 + 圆角行块，选中行图标与文字转白） -->
+        <Border Grid.Row="0" Margin="10" Padding="4"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                CornerRadius="8" Background="{DynamicResource RegionBrush}">
             <TreeView x:Name="FolderTreeView" 
                       Foreground="{DynamicResource PrimaryTextBrush}"
-                      Background="{DynamicResource RegionBrush}"
+                      Background="Transparent"
                       BorderThickness="0"
+                      Padding="0"
                       SelectedItemChanged="FolderTreeView_SelectedItemChanged"
+                      PreviewMouseRightButtonUp="FolderTreeView_PreviewMouseRightButtonUp"
+                      ItemContainerStyle="{StaticResource FolderTreeItemStyle}"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling">
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="TreeViewItem">
-                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
-                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}"/>
-                        <!-- 选中/悬停背景跟随主题 -->
-                        <Setter Property="Background" Value="Transparent"/>
-                        <Setter Property="Padding" Value="2"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource SecondaryRegionBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </TreeView.ItemContainerStyle>
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding SubFolders}">
                         <StackPanel Orientation="Horizontal">
                             <!-- 文件夹图标(Path,颜色跟主题走) -->
-                            <Path Data="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
+                            <Path x:Name="FolderIcon"
+                                  Data="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"
                                   Fill="{DynamicResource PrimaryBrush}"
-                                  Width="16" Height="16" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                            <TextBlock Text="{Binding Name}" 
-                                       Foreground="{DynamicResource PrimaryTextBrush}"
-                                       VerticalAlignment="Center"/>
+                                  Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
                         </StackPanel>
+                        <HierarchicalDataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True">
+                                <Setter TargetName="FolderIcon" Property="Fill" Value="White"/>
+                            </DataTrigger>
+                        </HierarchicalDataTemplate.Triggers>
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>
         </Border>
 
         <!-- 选中的路径显示 -->
-        <Grid Grid.Row="2" Margin="10,0,10,10">
+        <Grid Grid.Row="1" Margin="10,0,10,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -81,16 +206,25 @@
                        Text="{Binding Source={StaticResource Localization}, Path=[SelectedPath]}" 
                        Foreground="{DynamicResource PrimaryTextBrush}"
                        VerticalAlignment="Center" Margin="0,0,10,0"/>
-            <TextBox Grid.Column="1" x:Name="SelectedPathTextBox" 
-                     IsReadOnly="False"
-                     Foreground="{DynamicResource PrimaryTextBrush}"
-                     Background="{DynamicResource RegionBrush}"
-                     VerticalAlignment="Center"
-                     TextChanged="SelectedPathTextBox_TextChanged"/>
+            <Border Grid.Column="1" MinHeight="32" Padding="8,0"
+                    CornerRadius="6" BorderThickness="1"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    Background="{DynamicResource RegionBrush}"
+                    VerticalAlignment="Center">
+                <TextBox x:Name="SelectedPathTextBox" 
+                         IsReadOnly="False"
+                         BorderThickness="0"
+                         Padding="0"
+                         Background="Transparent"
+                         Foreground="{DynamicResource PrimaryTextBrush}"
+                         VerticalAlignment="Center"
+                         VerticalContentAlignment="Center"
+                         TextChanged="SelectedPathTextBox_TextChanged"/>
+            </Border>
         </Grid>
 
         <!-- 按钮 -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" 
+        <StackPanel Grid.Row="2" Orientation="Horizontal" 
                     HorizontalAlignment="Right" Margin="10">
             <Button Content="{Binding Source={StaticResource Localization}, Path=[OK]}" 
                     Width="80" Height="30" 

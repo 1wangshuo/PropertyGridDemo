@@ -82,6 +82,17 @@ namespace PropertyGridDemo.Models
         [NumberSlider(0.0, 2.0, 0.1, ShowNumberBox = true)]
         public double Contrast { get; set; } = 1.0;
 
+        [Category("II. 外观与显示")]
+        [DisplayName("检测区域水平范围")]
+        [Description("属性类型为 RangeValue 即自动映射成范围滑块；[RangeSlider] 指定 0-1920、步长 8。宿主读 Min / Max 即可")]
+        [RangeSlider(0, 1920, 8)]
+        public RangeValue DetectHorizontalRange { get; set; } = new RangeValue(320, 1600);
+
+        [Category("II. 外观与显示")]
+        [DisplayName("夜视增益区间")]
+        [Description("不写 [RangeSlider] 时按默认 0-100、步长 1")]
+        public RangeValue NightVisionGainRange { get; set; } = new RangeValue(20, 80);
+
         // ============================================================
         // III. 网络配置
         // ============================================================
@@ -312,6 +323,13 @@ namespace PropertyGridDemo.Models
         [Description("普通 string 属性 + [FormulaEditor] — 非 FormulaBound 类型同样可用公式编辑器")]
         [FormulaEditor(typeof(DemoFormulaTreeProvider))]
         public string DeviceAliasFormula { get; set; } = "一号相机";
+
+        [Category("IX. 公式绑定")]
+        [DisplayName("长类型绑定演示")]
+        [Description("FormulaBound<Dictionary<string, List<Dictionary<string, double>>>> — 有效类型名超长，行内类型提示自动中间省略，悬停看全文")]
+        [FormulaEditor(typeof(DemoFormulaTreeProvider))]
+        public FormulaBound<Dictionary<string, List<Dictionary<string, double>>>> LongTypeFormula { get; set; }
+            = new FormulaBound<Dictionary<string, List<Dictionary<string, double>>>> { Formula = "&{Flow1,Task2,Output}" };
 
         // ============================================================
         // X. 操作按钮
@@ -544,6 +562,8 @@ namespace PropertyGridDemo.Models
                 "NightVisionColor" => "Night Vision Color",
                 "Brightness" => "Brightness",
                 "Contrast" => "Contrast",
+                "DetectHorizontalRange" => "Detect Zone X Range",
+                "NightVisionGainRange" => "Night Vision Gain Range",
                 "IpAddress" => "IP Address",
                 "RtspPort" => "RTSP Port",
                 "Username" => "Username",
@@ -595,6 +615,8 @@ namespace PropertyGridDemo.Models
                 "BodyColor" => "Main color of the camera housing",
                 "LedColor" => "Indicator light color when running",
                 "NightVisionColor" => "IR fill light color for night vision (nullable)",
+                "DetectHorizontalRange" => "RangeValue auto-maps to the range slider; [RangeSlider] sets 0-1920, step 8",
+                "NightVisionGainRange" => "Without [RangeSlider] the range defaults to 0-100, step 1",
                 "ToggleSwitchDefault" => "ToggleSwitch attribute, default on/off text",
                 "ToggleSwitchCustomText" => "ToggleSwitch attribute with custom state text",
                 "PlainBoolCompare" => "Plain bool without the ToggleSwitch attribute (unchanged look)",
@@ -609,6 +631,7 @@ namespace PropertyGridDemo.Models
             {
                 "CameraName" or "IsEnabled" or "CameraType" or "InstallDate" or "WarrantyExpiry" => "I. Basic Info",
                 "BodyColor" or "LedColor" or "NightVisionColor" or "Brightness" or "Contrast" => "II. Appearance",
+                "DetectHorizontalRange" or "NightVisionGainRange" => "II. Appearance",
                 "IpAddress" or "RtspPort" or "Username" or "UseHttps" or "Protocol" => "III. Network",
                 "RecordDirectory" or "SnapshotDirectory" or "ConfigImportFile" or "LogFilePath" => "IV. Storage",
                 "NvrChannel" or "EnabledAnalyses" or "SliceMinutes" or "LoopRecording" => "V. Advanced",

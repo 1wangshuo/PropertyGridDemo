@@ -35,7 +35,9 @@ namespace PropertyGridLib.Controls
         /// <summary>布尔开关（ToggleSwitch）编辑器，见 [ToggleSwitch] 特性</summary>
         ToggleSwitch,
         /// <summary>多行文本（富文本查看）编辑器，见 [MultilineText] 特性</summary>
-        MultilineText
+        MultilineText,
+        /// <summary>范围滑块编辑器：属性类型为 RangeValue 时自动启用，见 [RangeSlider] 特性</summary>
+        RangeSlider
     }
 
     /// <summary>
@@ -109,8 +111,8 @@ namespace PropertyGridLib.Controls
             // 检测自定义编辑器
             DetectCustomEditor(propertyInfo);
 
-            // 按钮属性没有"值/展开"语义，禁用展开
-            if (CustomEditor == CustomEditorType.Button)
+            // 按钮属性没有"值/展开"语义，禁用展开；范围滑块同理（区间值不该在行内再展开 Min/Max）
+            if (CustomEditor == CustomEditorType.Button || CustomEditor == CustomEditorType.RangeSlider)
                 IsExpandable = false;
 
             // 公式已有内容（宿主已绑定）：默认展开公式条，直接呈现「已绑定」状态，
@@ -1312,9 +1314,8 @@ namespace PropertyGridLib.Controls
             var dlg = new PropertyGridLib.Dialogs.FolderBrowserDialog();
 
             // 标题/初始目录优先取特性上的声明（自定义文字经 TextResolver 翻译），
-            // 没写才回落到本地化文案与当前值
+            // 没写则由对话框默认使用本地化标题
             var title = T(attr?.Title);
-            dlg.Description = string.IsNullOrEmpty(title) ? LocalizationManager.GetString("SelectFolder") : title;
             if (!string.IsNullOrEmpty(title)) dlg.Title = title;
 
             if (!string.IsNullOrEmpty(ValueString) && System.IO.Directory.Exists(ValueString))
@@ -1516,6 +1517,22 @@ namespace PropertyGridLib.Controls
             if (multilineAttr != null && effectiveType == typeof(string))
             {
                 CustomEditor = CustomEditorType.MultilineText;
+                if (_isFormulaBound) goto formulaCheck;
+                return;
+            }
+
+            // 范围滑块：属性类型就是 RangeValue 时自动映射（无需特性）；
+            // [RangeSlider] 只负责提供最小值 / 最大值 / 步长，不写则用 0~100、步长 1
+            if (effectiveType == typeof(RangeValue))
+            {
+                CustomEditor = CustomEditorType.RangeSlider;
+                var rangeAttr = GetAttribute<RangeSliderAttribute>();
+                if (rangeAttr != null)
+                {
+                    SliderMinimum = rangeAttr.Minimum;
+                    SliderMaximum = rangeAttr.Maximum;
+                    SliderStep = rangeAttr.Step;
+                }
                 if (_isFormulaBound) goto formulaCheck;
                 return;
             }

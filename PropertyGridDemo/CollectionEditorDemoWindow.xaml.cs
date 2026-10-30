@@ -60,6 +60,24 @@ namespace PropertyGridDemo
 
         // ===== 独立控件演示：EventEditorControl / CollectionEditorControl / DictionaryEditorControl =====
 
+        private RangeValue _sdkRange = new RangeValue(120, 480);
+        /// <summary>范围滑块独立用法：区间值（与 RangeSliderControl.Value 双向）</summary>
+        public RangeValue SdkRange
+        {
+            get => _sdkRange;
+            set
+            {
+                if (_sdkRange != null && _sdkRange.Equals(value)) return;
+                _sdkRange = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(SdkRangeText));
+            }
+        }
+
+        /// <summary>宿主直接读取 .Min / .Max 即拿到两端值</summary>
+        public string SdkRangeText
+            => _sdkRange == null ? "（未设置）" : $"Min = {_sdkRange.Min}    Max = {_sdkRange.Max}";
+
         private string _sdkHandlerName = "";
         /// <summary>事件编辑器独立用法：处理方法名（与 EventEditorControl.HandlerName 双向）</summary>
         public string SdkHandlerName

@@ -224,6 +224,32 @@ namespace PropertyGridLib.Converters
         }
     }
 
+    /// <summary>
+    /// 复位按钮（R）的可见性：公式条未展开时**始终占位** ——
+    /// 未修改返回 Hidden（不可见但保留 20px 槽位），这样拖动滑块/改值时 R 出现或消失
+    /// 不会把编辑器列挤窄挤宽（"R 一闪一闪、属性长度跟着变"的毛病）。
+    /// 不带复位的属性也一样留槽位，保证所有行的值编辑器右边界对齐。
+    /// 公式条展开时返回 Collapsed（此时整行被公式条覆盖，槽位不需要）。
+    /// 输入：[IsModified(bool), ShowResetButton(bool), IsFormulaEditorOpen 取反后的 Visibility]
+    /// </summary>
+    public class ResetButtonVisConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            bool modified = values.Length > 0 && values[0] is bool m && m;
+            bool showReset = values.Length > 1 && values[1] is bool s && s;
+            bool formulaClosed = values.Length > 2 && values[2] is Visibility v && v == Visibility.Visible;
+
+            if (!formulaClosed) return Visibility.Collapsed;
+            return (modified && showReset) ? Visibility.Visible : Visibility.Hidden;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
     /// <summary>数字类型转 Double（用于 Slider 绑定）</summary>
     public class IntToDoubleConverter : IValueConverter
     {
@@ -555,6 +581,30 @@ namespace PropertyGridLib.Converters
         }
 
         public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// 长文本中间省略：超过阈值时保留「前缀…后缀」，用于绑定源树的键名与类型提示。
+    /// 只截中间，前缀（流程/任务层级）和后缀（属性名末尾）都还在，比纯尾部省略更容易认。
+    /// ConverterParameter = 最大字符数（含省略号），默认 20；完整文本由 ToolTip 提供。
+    /// </summary>
+    public class MiddleEllipsisConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is string text) || text.Length == 0) return value;
+
+            var max = 20;
+            if (parameter is string raw && int.TryParse(raw, out var parsed) && parsed > 3) max = parsed;
+            if (text.Length <= max) return text;
+
+            var head = (max - 1) / 2;          // 省略号本身占 1 个字符
+            var tail = max - 1 - head;
+            return text.Substring(0, head) + "…" + text.Substring(text.Length - tail);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
             => throw new NotSupportedException();
     }
 }

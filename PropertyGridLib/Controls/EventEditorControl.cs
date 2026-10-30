@@ -34,8 +34,7 @@ namespace PropertyGridLib.Controls
             if (Placeholder == null)
             {
                 var localized = LocalizationManager.GetString("NoHandler");
-                SetCurrentValue(PlaceholderProperty,
-                    string.IsNullOrEmpty(localized) ? "未绑定" : localized);
+                SetCurrentValue(PlaceholderProperty, localized ?? string.Empty);
             }
         }
 
