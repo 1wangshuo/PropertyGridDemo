@@ -28,6 +28,9 @@ PropertyGridDemo/publish/
 ## nuget 发布包不上传
 nuget/
 
+## 本地 AI 备注（含发布密钥，勿提交）
+AI.local.md
+
 ## Windows / macOS 噪音文件
 Thumbs.db
 ehthumbs.db

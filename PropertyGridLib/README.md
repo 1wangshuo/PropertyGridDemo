@@ -2,15 +2,24 @@
 
 WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl UI 库。
 
-> **版本 1.8.0** | .NET Framework 4.8+ / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
+> **版本 1.9.0** | .NET Framework 4.8+ / .NET Core 3.0/3.1 / .NET 6/7/8/10-windows | HandyControl 3.5.1 | **作者：WangShuo**
 
 ### 📦 相关仓库
 
 | 仓库 | 地址 |
 |------|------|
-| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.8.0` |
+| **本库（PropertyGridLib）** | NuGet：`Install-Package PropertyGridLib -Version 1.9.0` |
 | **Demo 项目** | https://github.com/1wangshuo/PropertyGridDemo |
 | **技能文档** | [skill/SKILL.md](https://github.com/1wangshuo/PropertyGridDemo/blob/main/skill/SKILL.md)（多页使用文档：基础用法 / 特性清单 / 编辑器类型 / 主题多语言 / 公式绑定 / PropertyGridPro / 示例模型 / FAQ） |
+
+---
+
+## ✨ v1.9.0 新特性
+
+- ✅ **✂️ 超长文本中间省略** — 绑定源树键名 8 字以内完整显示，超过则前 4 字 + 后 4 字；类型提示括号内 7 字以内完整显示，超过则前 3 字 + 后 3 字，完整文本见 ToolTip。
+- ✅ **🎚️ 单向数字滑块数值气泡** — 拖动时滑块上方显示当前值，与范围滑块一致；`NumberSliderControl` 亦可脱离属性网格独立使用。
+- ✅ **🪟 集合/字典编辑器窗口加宽** — 集合编辑器 735、字典编辑器 770，右侧属性 / 键值区留出更多空间。
+- ✅ **⌨️ 输入框回车提交** — 文本、数值、公式、事件、字典键值输入框按 Enter 提交当前值并移走焦点；多行文本弹窗中 `Shift+Enter` / `Ctrl+Enter` / `Alt+Enter` 换行。
 
 ---
 
@@ -20,7 +29,7 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 - ✅ **🧼 `RangeSliderControl` 可独立使用** — 不依赖属性网格，`Value` / `ValueStart` / `ValueEnd` 均可双向绑定。
 - ✅ **📍 复位按钮 R 固定占位** — 未修改时隐藏但保留槽位，改值 / 拖动时 R 出现不再挤压值编辑器列（控件宽度不跳）。
 - ✅ **🌳 文件夹选择对话框升级** — 圆角卡片树、悬停浅灰 / 选中主题色胶囊、常显细滚动条；文件夹项右键「新建文件夹 / 重命名 / 删除」；打开时自动滚动到当前路径节点。
-- ✅ **✂️ 超长文本中间省略** — 绑定源树键名、类型提示只保留前 3 字 + 后 3 字，完整文本见 ToolTip，不再需要横向拉。
+- ✅ **✂️ 超长文本中间省略** — 绑定源树键名、类型提示只保留前 3 字 + 后 3 字，完整文本见 ToolTip。
 - ✅ **🌐 界面文本补齐多语言** — 标题默认值、集合 / 字典弹窗提示、紧凑摘要等硬编码中文全部改走本地化词典。
 
 ---
@@ -158,6 +167,9 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
   - [MultiSelectAttribute — 多选列表](#multiselectattribute--多选列表)
   - [ButtonAttribute — 命令按钮](#buttonattribute--命令按钮)
   - [ToggleSwitchAttribute — 布尔开关](#toggleswitchattribute--布尔开关)
+  - [MultilineTextAttribute — 多行文本](#multilinetextattribute--多行文本)
+  - [HighlightAttribute — 关键属性标记](#highlightattribute--关键属性标记)
+  - [EditorChromeAttribute — 编辑器装饰](#editorchromeattribute--编辑器装饰)
 - [🎨 颜色编辑器](#-颜色编辑器)
 - [📁 字典编辑器（IDictionary）](#-字典编辑器idictionary)
 - [🔌 宿主自定义编辑器扩展机制](#-宿主自定义编辑器扩展机制)
@@ -166,6 +178,7 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 - [编辑器类型总览](#编辑器类型总览)
 - [PropertyGrid 集合模式（内联显示）](#propertygrid-集合模式内联显示)
 - [集合编辑器 UserControl 独立使用](#集合编辑器-usercontrol-独立使用)
+- [NumberSliderControl 独立使用](#numberslidercontrol-独立使用)
 - [RangeSliderControl 独立使用](#rangeslidercontrol-独立使用)
 - [FormulaBindingControl 独立使用](#formulabindingcontrol-独立使用)
 - [FormulaBound&lt;T&gt; — 公式绑定泛型类型](#formulaboundt--公式绑定泛型类型)
@@ -182,19 +195,19 @@ WPF PropertyGrid 控件库 — 仿 WinForms PropertyGrid，基于 HandyControl U
 ### NuGet 包管理器
 
 ```powershell
-Install-Package PropertyGridLib -Version 1.8.0
+Install-Package PropertyGridLib -Version 1.9.0
 ```
 
 ### .NET CLI
 
 ```bash
-dotnet add package PropertyGridLib --version 1.8.0
+dotnet add package PropertyGridLib --version 1.9.0
 ```
 
 ### PackageReference (PackageReference)
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.8.0" />
+<PackageReference Include="PropertyGridLib" Version="1.9.0" />
 ```
 
 安装后，NuGet 会自动拉取依赖项 `HandyControl 3.5.1`。
@@ -252,8 +265,8 @@ propertyGrid.RefreshProperties();        // 刷新属性列表
 | 命名空间 | 内容 |
 |---------|------|
 | `PropertyGridLib` | **PropertyGrid** 控件、**IPropertyLocalization** 接口 |
-| `PropertyGridLib.Controls` | PropertyItem、IPropertyItem、PropertyCategory、EditorTemplateSelector、FormulaBound&lt;T&gt;、FormulaTreeNode、IFormulaTreeProvider、IMultiSelectProvider、MultiSelectControl、FormulaBindingControl、CollectionEditorControl、SimpleCollectionEditorControl、DictionaryEditorControl、ColorEditControl、PropertyButtonClickEventArgs、CustomEditorType 枚举 |
-| `PropertyGridLib.Attributes` | FilePathAttribute、DirectoryPathAttribute、CollectionEditorAttribute、NumberSliderAttribute、FormulaEditorAttribute、MultiSelectAttribute、ButtonAttribute、ToggleSwitchAttribute |
+| `PropertyGridLib.Controls` | PropertyItem、IPropertyItem、PropertyCategory、EditorTemplateSelector、FormulaBound&lt;T&gt;、FormulaTreeNode、IFormulaTreeProvider、IMultiSelectProvider、MultiSelectControl、FormulaBindingControl、CollectionEditorControl、SimpleCollectionEditorControl、DictionaryEditorControl、ColorEditControl、NumberSliderControl、RangeSliderControl、PropertyButtonClickEventArgs、CustomEditorType 枚举 |
+| `PropertyGridLib.Attributes` | FilePathAttribute、DirectoryPathAttribute、CollectionEditorAttribute、NumberSliderAttribute、RangeSliderAttribute、FormulaEditorAttribute、MultiSelectAttribute、ButtonAttribute、ToggleSwitchAttribute、MultilineTextAttribute、HighlightAttribute、EditorChromeAttribute |
 | `PropertyGridLib.Dialogs` | FolderBrowserDialog、CollectionEditorDialog、SimpleCollectionEditorDialog、DictionaryEditorDialog |
 | `PropertyGridLib.Localization` | LocalizationManager、LocalizationProxy、LocalizedExtension、Language 枚举 |
 | `PropertyGridLib.Converters` | BoolToVisibilityConverter、InverseBoolConverter、ObjectToTypeConverter、ColorToBrushConverter 等值转换器 |
@@ -358,7 +371,7 @@ public List<RobotConfig> Robots { get; set; } = new List<RobotConfig>();
 
 ### NumberSliderAttribute — 数值滑块
 
-将数值属性显示为滑块编辑器，支持 int、double、float、decimal 等数值类型。
+将数值属性显示为滑块编辑器，支持 int、double、float、decimal 等数值类型。按住拖动时滑块上方显示当前值气泡，与范围滑块一致。
 
 ```csharp
 // 整数滑块
@@ -383,6 +396,8 @@ public double Opacity { get; set; } = 50;
 | `maximum` | `double` | 最大值 |
 | `step` | `double` | 步长（默认 1） |
 | `ShowNumberBox` | `bool` | 是否显示可编辑数字输入框（默认 false；启用后与滑块双向同步并取代数值标签） |
+
+> 需要脱离属性网格单独使用时，见 [NumberSliderControl 独立使用](#numberslidercontrol-独立使用)。
 
 ---
 
@@ -578,6 +593,48 @@ public bool IsEnabled { get; set; }
 
 ---
 
+### MultilineTextAttribute — 多行文本
+
+`string` 属性需要长文本 / 多行内容时标注 `[MultilineText]`：行内保持「单行只读预览 + `...` 按钮」，不改变行高；点 `...` 弹出多行编辑窗（自动换行、独立滚动）。
+
+```csharp
+[MultilineText]
+[DisplayName("备注")]
+public string Remarks { get; set; }
+```
+
+弹窗内：普通 `Enter` 提交并关闭；`Shift+Enter` / `Ctrl+Enter` / `Alt+Enter` 插入换行；只读属性只读浏览。
+
+---
+
+### HighlightAttribute — 关键属性标记
+
+标记关键属性：基础网格在属性名前显示强调色圆点；`PropertyGridPro` 表单式在属性块左侧显示强调色竖线。`Tip` 可加悬停提示。
+
+```csharp
+[Highlight]
+public int Exposure { get; set; }
+
+[Highlight(Tip = "改这里会影响产线节拍")]
+public int Speed { get; set; }
+```
+
+---
+
+### EditorChromeAttribute — 编辑器装饰
+
+逐个属性控制行尾装饰件（重置按钮、类型提示）：
+
+```csharp
+[EditorChrome(ShowReset = false)]                              // 这一行不显示重置按钮
+[EditorChrome(ResetText = "默认", ResetToolTip = "恢复出厂值")]
+[EditorChrome(ShowTypeHint = true)]                            // 单独打开类型提示
+```
+
+`ShowTypeHint` 留空时跟随 `PropertyGrid.ShowTypeHint` 全局开关。
+
+---
+
 ## 🎨 颜色编辑器
 
 ### 自动检测
@@ -631,6 +688,8 @@ PropertyGrid 自动识别以下类型，无需任何特性：
 ## 📁 字典编辑器（IDictionary）
 
 字典属性（`Dictionary<TKey,TValue>` 等 `IDictionary`）会被自动识别，显示为 "N 项 + ..." 按钮，点击弹出 `DictionaryEditorDialog`。无需任何特性；若把 `[CollectionEditor]` 标在字典属性上，也会路由到字典编辑器。
+
+> 键 / 值输入框按 `Enter` 提交当前输入并移走焦点；复杂值内嵌的属性网格同样适用。
 
 ```csharp
 // 简单键值：键、值都用文本框编辑（自动类型转换）
@@ -925,8 +984,9 @@ PropertyGridPro1.SelectedObject = new SampleObject();
 | NumericUpDown | `int`, `double`, `float`, `decimal`, `long`, `short`, `byte` | 数字输入框（带增减按钮） |
 | ComboBox | `enum` | 枚举下拉选择 |
 | DateTimePicker | `DateTime` / `DateTime?` | 日期时间选择器 |
-| Slider | `[NumberSlider]` 特性 | 滑块 + 数值标签 |
+| Slider | `[NumberSlider]` 特性 | 滑块 + 数值标签/数字框；**拖动时上方气泡显示当前值** |
 | **RangeSlider** | `RangeValue` 类型（`[RangeSlider]` 配边界与步长） | **双滑块区间选择，拖动时气泡显示「起点 ~ 终点」；宿主读 `.Min` / `.Max`** |
+| **MultilineText** | `[MultilineText]` 特性（`string`） | **单行预览 + `...` 按钮，点击弹窗编辑多行文本** |
 | **Color** | `Color` / `Color?` / `SolidColorBrush` | **颜色预览块 + "..." 按钮（弹出 HC ColorPicker）** |
 | FilePath | `[FilePath]` 特性 | 文本框 + 浏览按钮 |
 | DirectoryPath | `[DirectoryPath]` 特性 | 文本框 + 浏览按钮 |
@@ -938,6 +998,8 @@ PropertyGridPro1.SelectedObject = new SampleObject();
 | Expandable | 复杂对象（非简单类型、非集合） | 可展开子属性 |
 | Formula | `[FormulaEditor]` 特性或 `FormulaBound<T>` | 值编辑器 + 公式绑定区 |
 | **宿主自定义** | `PropertyGrid.CustomEditors` 注册的 Attribute | 宿主提供的 DataTemplate |
+
+> 键盘操作：文本、数值、公式、事件、字典键值输入框按 `Enter` 提交当前值并移走焦点；`[MultilineText]` 弹窗内 `Shift+Enter` / `Ctrl+Enter` / `Alt+Enter` 换行。
 
 ---
 
@@ -1024,6 +1086,26 @@ simpleEditor.Items = new List<int> { 1, 2, 3 };
 | `Placeholder` | 输入框占位文字。为 null 时回落到本地化的「未绑定」 |
 
 请求编辑经 `RequestEditEvent` 路由事件抛出，参数携带对应的 `EventItem`（独立用法下为 null，宿主可从发送方读 `HandlerName`）。宿主收到后自行决定打开哪种编辑器。
+
+---
+
+## NumberSliderControl 独立使用
+
+`NumberSliderControl` 可脱离 `PropertyGrid` 使用，拖动时滑块上方显示当前值气泡：
+
+```xml
+<controls:NumberSliderControl Minimum="0" Maximum="100" Step="1"
+                              Value="{Binding Volume, Mode=TwoWay}" />
+```
+
+| 属性 | 说明 |
+|------|------|
+| `Value` | 当前值（`double`，默认双向绑定） |
+| `Minimum` / `Maximum` / `Step` | 边界与刻度（默认 0 / 100 / 1） |
+| `IsReadOnly` | 只读时滑块禁用 |
+| `DisplayText` | 气泡文本；绑定格式化后的值，为空时显示 `Value` |
+
+拖动时气泡实时显示当前值，松手隐藏。
 
 ---
 
@@ -1497,18 +1579,43 @@ PropertyGrid 在内部监听 `LocalizationManager.LanguageChanged` 事件，语�
 | 依赖 | 版本 | 说明 |
 |------|------|------|
 | .NET Framework | 4.8+ | 支持的目标框架之一 |
-| .NET | 6.0/7.0/8.0/10.0-windows | 支持的现代框架 |
+| .NET | Core 3.0/3.1 / 6.0/7.0/8.0/10.0-windows | 支持的现代框架 |
 | HandyControl | 3.5.1 | 官方 HandyControl UI 控件库 |
-| System.Text.Json | 6.0.0+ | 仅 .NET Framework 4.8 需要（.NET 6+ 内置） |
+| System.Text.Json | 6.0.0+ | 仅 .NET Framework 4.8 需要（.NET Core 3.0+ 内置） |
 
 **版本兼容性：**
 - System.Text.Json 向上兼容到 16.0+
 - 你的项目可以使用更高版本的 System.Text.Json，不会产生冲突
-- .NET 6/7/8 使用内置版本，无需额外引用
+- .NET Core 3.0/3.1 与 .NET 6/7/8 使用内置版本，无需额外引用
 
 ---
 
 ## 更新日志
+
+### v1.9.0（2026-11-21）
+
+#### ✨ 新增
+
+- **`NumberSliderControl` 单值滑块**：拖动时滑块上方显示当前值气泡，与范围滑块一致；可脱离 `PropertyGrid` 独立使用。
+- **输入框回车提交**：文本、数值、公式、事件、字典键值输入框按 Enter 提交当前值并移走焦点；多行文本弹窗中 `Shift+Enter` / `Ctrl+Enter` / `Alt+Enter` 换行。
+
+#### 🔧 改进
+
+- 绑定源树键名 8 字以内完整显示，更长时前 4 字 + 后 4 字；类型提示括号内 7 字以内完整显示，更长时前 3 字 + 后 3 字。
+- 集合编辑器窗口加宽到 735，字典编辑器加宽到 770，右侧属性 / 键值区留出更多空间。
+
+### v1.8.0（2026-10-30）
+
+#### ✨ 新增
+
+- 范围滑块：`RangeValue` + `[RangeSlider]`，拖动气泡显示区间；`RangeSliderControl` 可独立使用。
+- 复位按钮 R 固定占位。
+
+#### 🔧 改进
+
+- 文件夹树视觉升级，文件夹项支持右键新建 / 重命名 / 删除。
+- 绑定源键名与类型提示中间省略，完整文本见 ToolTip。
+- 集合 / 字典弹窗界面文本补齐多语言。
 
 ### v1.7.0（2026-10-25）
 

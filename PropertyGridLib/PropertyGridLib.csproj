@@ -10,17 +10,23 @@
     
     <!-- NuGet 包配置 -->
     <PackageId>PropertyGridLib</PackageId>
-    <Version>1.8.0</Version>
-    <AssemblyVersion>1.8.0.0</AssemblyVersion>
-    <FileVersion>1.8.0.0</FileVersion>
+    <Version>1.9.0</Version>
+    <AssemblyVersion>1.9.0.0</AssemblyVersion>
+    <FileVersion>1.9.0.0</FileVersion>
     <Authors>WangShuo</Authors>
     <Company>WangShuo</Company>
     <Product>PropertyGridLib</Product>
     <Copyright>Copyright © 2026 WangShuo. All rights reserved.</Copyright>
     <Trademark>WangShuo</Trademark>
-    <Description>WPF 属性网格控件库（基于 HandyControl）。PropertyGrid 提供经典两栏与紧凑单行两种排布、分类卡片、搜索与多语言；PropertyGridPro 提供卡片式与选项页表单式排布。内置集合/字典/公式绑定/颜色/图片/链接等编辑器，支持 [Highlight] 关键属性标记与 [EditorChrome] 编辑器装饰开关。适用于 .NET Framework 4.8 与 .NET 6/7/8/10 (Windows)。</Description>
-    <PackageTags>WPF;PropertyGrid;PropertyGridPro;Editor;Controls;Button;Dictionary;Collection;Formula;MultiSelect;ToggleSwitch;Localization;EventPicker;Events;HandyControl;TypeConverter;NETCoreApp3;NET6;NET7;NET8;NET10</PackageTags>
-    <PackageReleaseNotes>1.8.0
+    <Description>WPF 属性网格控件库（基于 HandyControl）。PropertyGrid 提供经典两栏与紧凑单行两种排布、分类卡片、搜索与多语言；PropertyGridPro 提供卡片式与选项页表单式排布。内置集合/字典/公式绑定/多行文本/颜色/图片/链接等编辑器，支持 [Highlight] 关键属性标记与 [EditorChrome] 编辑器装饰开关。适用于 .NET Framework 4.8、.NET Core 3.0/3.1 与 .NET 6/7/8/10 (Windows)。</Description>
+    <PackageTags>WPF;PropertyGrid;PropertyGridPro;Editor;Controls;Button;Dictionary;Collection;Formula;MultiSelect;ToggleSwitch;MultilineText;Localization;EventPicker;Events;HandyControl;TypeConverter;NETCoreApp3;NET6;NET7;NET8;NET10</PackageTags>
+    <PackageReleaseNotes>1.9.0
+· 绑定源树键名 8 个字符以内完整显示，更长时保留前 4 字 + 后 4 字（中间省略），完整文本见 ToolTip
+· 类型提示括号内 7 个字符以内完整显示（如 "(Double)" 不再被截），更长时保留前 3 字 + 后 3 字
+· 单向数字滑块拖动时也在上方显示数值气泡，与范围滑块一致
+· 集合编辑器窗口加宽到 735、字典编辑器加宽到 770，右侧属性/键值区留出更多空间
+· 文本/数值/公式/事件/字典键值输入框支持按 Enter 提交当前值并移走焦点；多行文本弹窗中 Shift/Ctrl/Alt+Enter 换行
+1.8.0
 · 绑定源树键名过长时只保留前 3 字 + 后 3 字（中间省略），完整文本见 ToolTip，不再需要横向拉
 · 类型提示（含泛型长类型名）同样中间省略；行内公式条上只留前 3 字 + 后 3 字，给输入框让位
 · 公式输入框悬停显示完整公式
@@ -55,7 +61,7 @@
          包会落到 PropertyGridLib\nuget\ 造成「两个地方都有包、分不清哪个最新」。
          这里以工程文件位置为准推导，任何方式打包都输出到同一目录。 -->
     <PackageOutputPath>$(MSBuildThisFileDirectory)..\nuget\</PackageOutputPath>
-    <InformationalVersion>1.8.0</InformationalVersion>
+    <InformationalVersion>1.9.0</InformationalVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

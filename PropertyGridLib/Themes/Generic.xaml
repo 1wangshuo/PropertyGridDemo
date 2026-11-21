@@ -22,8 +22,10 @@
     <conv:DateTimeConverter x:Key="DateTimeConv"/>
     <conv:ObjectToTypeConverter x:Key="ObjToType"/>
     <conv:FontSizeOffsetConverter x:Key="FontSizeOffset"/>
-    <!-- 绑定源键名/类型提示过长时的「前缀…后缀」中间省略 -->
+    <!-- 绑定源键名过长时的「前缀…后缀」中间省略 -->
     <conv:MiddleEllipsisConverter x:Key="MiddleEllipsis"/>
+    <!-- 类型提示专用：括号里的类型名 7 字以内完整显示，更长才中间省略 -->
+    <conv:TypeHintEllipsisConverter x:Key="TypeHintEllipsis"/>
     <!-- 长度的指定比例：Small 布局标题列「Auto 但最多 50%」的封顶用 -->
     <conv:RatioLengthConverter x:Key="RatioLength"/>
     <!-- 表单式分类列宽：min(期望列宽, 面板宽 × 比例)，面板拖窄时不让分类列挤死内容区 -->
@@ -181,11 +183,11 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <!-- 键名过长时中间省略成「前3字…后3字」：前缀是流程/任务层级、后缀是属性名末尾，
-                 比纯尾部省略更容易认；完整文本走 ToolTip，不用横向拉。
-                 树里横向滚动已禁用，省略后的文本会在类型胶囊左侧自然收窄。 -->
+            <!-- 键名 8 字以内完整显示；超过 8 字才中间省略成「前4字…后4字」：
+                 前缀是流程/任务层级、后缀是属性名末尾，比纯尾部省略更容易认；
+                 完整文本走 ToolTip，不用横向拉。树里横向滚动已禁用。 -->
             <TextBlock Grid.Column="0"
-                       Text="{Binding Header, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
+                       Text="{Binding Header, Converter={StaticResource MiddleEllipsis}, ConverterParameter='8,4,4'}"
                        TextTrimming="CharacterEllipsis"
                        ToolTip="{Binding Header}"/>
             <!-- 类型提示(如 “(int)”)：宿主未填 FormulaType 时 TypeHint 为 null，不显示。
@@ -324,7 +326,8 @@
             <DataTemplate>
                 <TextBox Text="{Binding ValueString, UpdateSourceTrigger=LostFocus, FallbackValue=''}"
                          IsReadOnly="{Binding IsReadOnly}"
-                         VerticalContentAlignment="Center"/>
+                         VerticalContentAlignment="Center"
+                         behaviors:EnterKeyCommit.IsEnabled="True"/>
             </DataTemplate>
         </local:EditorTemplateSelector.StringTemplate>
 
@@ -481,7 +484,8 @@
             <DataTemplate>
                 <hc:NumericUpDown Value="{Binding ValueString, Converter={StaticResource ObjToType}, UpdateSourceTrigger=LostFocus, FallbackValue=0}"
                                   IsReadOnly="{Binding IsReadOnly}"
-                                  VerticalContentAlignment="Center"/>
+                                  VerticalContentAlignment="Center"
+                                  behaviors:EnterKeyCommit.IsEnabled="True"/>
             </DataTemplate>
         </local:EditorTemplateSelector.NumberTemplate>
 
@@ -592,14 +596,15 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Slider Grid.Column="0"
-                            Value="{Binding Value, Converter={StaticResource IntToDouble}, FallbackValue=0, TargetNullValue=0}"
-                            Minimum="{Binding SliderMinimum}"
-                            Maximum="{Binding SliderMaximum}"
-                            TickFrequency="{Binding SliderStep}"
-                            IsSnapToTickEnabled="True"
-                            VerticalAlignment="Center"
-                            IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"/>
+                    <!-- 单值滑块：拖动时在上方显示数值气泡（与范围滑块同款交互） -->
+                    <local:NumberSliderControl Grid.Column="0"
+                                               Value="{Binding Value, Converter={StaticResource IntToDouble}, FallbackValue=0, TargetNullValue=0}"
+                                               Minimum="{Binding SliderMinimum}"
+                                               Maximum="{Binding SliderMaximum}"
+                                               Step="{Binding SliderStep}"
+                                               DisplayText="{Binding ValueString}"
+                                               IsReadOnly="{Binding IsReadOnly}"
+                                               VerticalAlignment="Center"/>
                     <!-- 数字输入框（ShowNumberBox=true 时显示），与滑块双向同步：
                          Minimum/Maximum/Increment 跟随 NumberSlider 特性，
                          键入与 +/- 步进都会被边界钳制；失焦提交避免中间输入反复解析 -->
@@ -615,7 +620,8 @@
                                       VerticalAlignment="Center"
                                       Margin="8,0,0,0"
                                       Visibility="{Binding SliderShowNumberBox, Converter={StaticResource BoolToVis}}"
-                                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"/>
+                                      IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"
+                                      behaviors:EnterKeyCommit.IsEnabled="True"/>
                     <!-- 只读数值标签（默认显示；开启 ShowNumberBox 后由数字框取代） -->
                     <TextBlock Grid.Column="1"
                                Text="{Binding ValueString}"
@@ -728,7 +734,8 @@
                                  Foreground="{DynamicResource SecondaryTextBrush}"
                                  VerticalContentAlignment="Center"
                                  ToolTip="{Binding FormulaString, RelativeSource={RelativeSource TemplatedParent}}"
-                                 hc:InfoElement.Placeholder="{loc:Localized FormulaPlaceholder}"/>
+                                 hc:InfoElement.Placeholder="{loc:Localized FormulaPlaceholder}"
+                                 behaviors:EnterKeyCommit.IsEnabled="True"/>
                         <!-- 选绑定源：淡主题色圆角按钮；悬停/弹窗打开时加深，
                              比"透明背景 + 细图标"更像一个可点的入口 -->
                         <ToggleButton Grid.Column="1"
@@ -971,7 +978,8 @@
                         <TextBox x:Name="PART_TextBox" Grid.Column="0"
                                  Text="{Binding Text, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
-                                 VerticalContentAlignment="Center"/>
+                                 VerticalContentAlignment="Center"
+                                 behaviors:EnterKeyCommit.IsEnabled="True"/>
                         <Button x:Name="PART_BrowseButton" Grid.Column="1"
                                 Content="..."
                                 MinWidth="30"
@@ -1022,6 +1030,41 @@
         </Setter>
     </Style>
 
+    <!-- ========== NumberSliderControl 样式（单值滑块 + 拖动数值气泡，可独立使用） ==========
+         气泡与 RangeSliderControl 同款：模板内 Border，按下显示、抬起隐藏，
+         数值随 Value/DisplayText 刷新；不用 Popup，避免属性行内被裁剪。 -->
+    <Style TargetType="{x:Type local:NumberSliderControl}">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type local:NumberSliderControl}">
+                    <Grid>
+                        <Slider x:Name="PART_Slider"
+                                Minimum="{Binding Minimum, RelativeSource={RelativeSource TemplatedParent}}"
+                                Maximum="{Binding Maximum, RelativeSource={RelativeSource TemplatedParent}}"
+                                TickFrequency="{Binding Step, RelativeSource={RelativeSource TemplatedParent}}"
+                                IsSnapToTickEnabled="True"
+                                Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
+                                IsEnabled="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource InverseBool}}"
+                                VerticalAlignment="Center"/>
+
+                        <!-- 拖动数值气泡：贴在滑块上方（负上边距，不进占位），不参与命中测试 -->
+                        <Border x:Name="PART_DragTip"
+                                Visibility="Collapsed"
+                                Background="{DynamicResource PrimaryBrush}"
+                                CornerRadius="10" Padding="10,3,10,4"
+                                HorizontalAlignment="Center" VerticalAlignment="Top"
+                                Margin="0,-26,0,0"
+                                IsHitTestVisible="False"
+                                Panel.ZIndex="9">
+                            <TextBlock Text="{Binding BubbleText, RelativeSource={RelativeSource TemplatedParent}}"
+                                       Foreground="White" FontSize="12"/>
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ========== FormulaSwitchControl 样式（普通输入 ↔ 公式绑定 切换控件，可独立使用） ==========
          普通模式：值输入框 + 🔗；点击 🔗（IsFormulaMode=true）整行切换为公式绑定条
          （FormulaBindingControl：公式输入 + 公式树选择），再点切回普通输入。
@@ -1043,7 +1086,8 @@
                                     hc:InfoElement.Placeholder="{Binding Placeholder, RelativeSource={RelativeSource TemplatedParent}}"
                                     VerticalContentAlignment="Center"
                                     Margin="0"
-                                    Visibility="{Binding IsFormulaMode, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                                    Visibility="{Binding IsFormulaMode, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                                    behaviors:EnterKeyCommit.IsEnabled="True"/>
                         <local:FormulaBindingControl x:Name="PART_FormulaBinding"
                                                      Grid.Column="0"
                                                      Compact="{Binding Compact, RelativeSource={RelativeSource TemplatedParent}}"
@@ -1252,7 +1296,7 @@
                                                      IsReadOnly="{Binding IsReadOnly}"/>
                         <!-- 类型提示(如 "(int)"):淡蓝色斜体,与公式输入框内容颜色区分 -->
                         <TextBlock Grid.Column="1"
-                                   Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
+                                   Text="{Binding TypeHint, Converter={StaticResource TypeHintEllipsis}}"
                                    VerticalAlignment="Center"
                                    Margin="4,0,0,0"
                                    FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
@@ -1418,7 +1462,7 @@
                                                      FormulaString="{Binding FormulaString, Mode=TwoWay}"
                                                      IsReadOnly="{Binding IsReadOnly}"/>
                         <TextBlock Grid.Column="1"
-                                   Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
+                                   Text="{Binding TypeHint, Converter={StaticResource TypeHintEllipsis}}"
                                    VerticalAlignment="Center"
                                    Margin="4,0,0,0"
                                    FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGrid}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
@@ -1791,7 +1835,8 @@
                         <hc:TextBox x:Name="PART_HandlerNameBox" Grid.Column="0"
                                     Text="{Binding HandlerName, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay, UpdateSourceTrigger=LostFocus}"
                                     hc:InfoElement.Placeholder="{Binding Placeholder, RelativeSource={RelativeSource TemplatedParent}}"
-                                    IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"/>
+                                    IsReadOnly="{Binding IsReadOnly, RelativeSource={RelativeSource TemplatedParent}}"
+                                    behaviors:EnterKeyCommit.IsEnabled="True"/>
                         <Button x:Name="PART_EditButton" Grid.Column="1"
                                 Width="20" Height="20" Padding="0" Margin="4,0,0,0"
                                 Content="⚡" FontSize="11"
@@ -2116,7 +2161,7 @@
                                                              IsReadOnly="{Binding IsReadOnly}"/>
                                 <!-- 类型提示(如 "(int)"):淡蓝色斜体,与公式输入框内容颜色区分 -->
                                 <TextBlock Grid.Column="1"
-                                           Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
+                                           Text="{Binding TypeHint, Converter={StaticResource TypeHintEllipsis}}"
                                            VerticalAlignment="Center"
                                            Margin="4,0,0,0"
                                            FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=pg:PropertyGridPro}, Converter={StaticResource FontSizeOffset}, ConverterParameter=-2}"
@@ -2368,7 +2413,7 @@
                                       Fill="{DynamicResource PrimaryBrush}" Width="12" Height="12" Stretch="Uniform"/>
                             </Button>
                             <TextBlock Grid.Column="1"
-                                       Text="{Binding TypeHint, Converter={StaticResource MiddleEllipsis}, ConverterParameter=7}"
+                                       Text="{Binding TypeHint, Converter={StaticResource TypeHintEllipsis}}"
                                        VerticalAlignment="Center"
                                        Margin="4,0,0,0"
                                        FontStyle="Italic"

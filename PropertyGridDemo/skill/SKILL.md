@@ -1,8 +1,8 @@
-# PropertyGridLib 技能文档（v1.8.0）
+# PropertyGridLib 技能文档（v1.9.0）
 
 > WPF PropertyGrid 控件库 **PropertyGridLib** 与官方演示程序 **PropertyGridDemo** 的多页使用文档入口。
 >
-> 版本：**1.8.0** ｜ 更新日期：2026-10-30 ｜ 作者：WangShuo ｜ 许可：MIT
+> 版本：**1.9.0** ｜ 更新日期：2026-11-21 ｜ 作者：WangShuo ｜ 许可：MIT
 
 ![PropertyGrid 基础控件（浅色主题）](images/propertygrid-main-light.png)
 
@@ -27,7 +27,7 @@
 
 | 目录 / 工程 | 类型 | 说明 |
 |------------|------|------|
-| `PropertyGridLib/` | WPF 类库（NuGet 包） | 控件本体：`PropertyGrid`、`PropertyGridPro`、8 个自定义特性、集合/字典/公式/颜色等编辑器与对话框 |
+| `PropertyGridLib/` | WPF 类库（NuGet 包） | 控件本体：`PropertyGrid`、`PropertyGridPro`、自定义特性、集合/字典/公式/颜色等编辑器与对话框 |
 | `PropertyGridDemo/` | WPF 演示程序（多目标：`net48` / `net6.0-windows` / `net8.0-windows` / `net10.0-windows`） | 「智能监控摄像头配置」示例模型（I ~ XV 共 15 个分组）+ 4 个演示窗口 |
 | `PropertyGridDemo/skill/` | 文档 | 本技能文档与 `skill/images/` 截图资源（随演示仓库一并发布） |
 | `nuget/` | 产物 | 本地构建的 `PropertyGridLib.*.nupkg` / `.snupkg`（已加入 `.gitignore`，不上传仓库） |
@@ -46,16 +46,16 @@
 
 ```powershell
 # Package Manager Console
-Install-Package PropertyGridLib -Version 1.6.0
+Install-Package PropertyGridLib -Version 1.9.0
 ```
 
 ```bash
 # CLI
-dotnet add package PropertyGridLib --version 1.6.0
+dotnet add package PropertyGridLib --version 1.9.0
 ```
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.6.0" />
+<PackageReference Include="PropertyGridLib" Version="1.9.0" />
 ```
 
 > 离线部署：直接引用 `PropertyGridLib.dll` 即可，HandyControl、System.Text.Json 等依赖已内嵌进单一 DLL。
@@ -108,6 +108,7 @@ propertyGrid.RefreshProperties();        // 重新反射对象、刷新列表
 
 | 版本 | 日期 | 要点 |
 |------|------|------|
+| **1.9.0** | 2026-11-21 | 绑定源键名 8 字 / 类型提示 7 字以内完整显示；单值数字滑块拖动数值气泡；集合 / 字典编辑器窗口加宽；Enter 提交并失焦、Shift/Ctrl/Alt+Enter 换行 |
 | **1.8.0** | 2026-10-30 | 新增范围滑块（`RangeValue` / `[RangeSlider]` / `RangeSliderControl` 独立使用，拖动气泡显示区间）；复位按钮 R 固定占位；文件夹树视觉升级 + 右键新建/重命名/删除；绑定源键名与类型提示中间省略；界面文本补齐多语言 |
 | 1.6.0 | 2026-10-15 | 修掉「重置所有属性」连续点击闪退（颜色编辑器色块改绑控件独占画刷）、复杂对象值区改显友好类型名、多层嵌套可逐层展开、浮点数值不再显示长尾数、公式绑定默认进入已绑定态、集合/字典编辑器列表随属性刷新、去除行内修改红点、事件页分类折叠 + 底部描述栏、分类头改用面板色；新增 `net10.0-windows` 目标 |
 | 1.5.0 | 2026-10-14 | 修复 `FormulaSwitchControl` 在公式模式下普通输入框与公式输入框重叠的问题；新增 `EventPicker` 独立事件编辑器演示窗口 |

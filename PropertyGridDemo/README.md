@@ -50,6 +50,15 @@
 
 ---
 
+## v1.9.0 更新要点
+
+| 变更 | 说明 |
+|------|------|
+| 超长文本中间省略 | 绑定源键名 8 字以内完整显示，更长则前 4 字 + 后 4 字；类型提示括号内 7 字以内完整显示，更长则前 3 字 + 后 3 字 |
+| 单值滑块数值气泡 | 拖动时滑块上方显示当前值，与范围滑块一致 |
+| 编辑器窗口加宽 | 集合编辑器 735、字典编辑器 770，右侧属性 / 键值区更宽松 |
+| 回车提交 | 文本、数值、公式、事件、字典键值输入框 Enter 提交并失焦；多行文本弹窗 Shift/Ctrl/Alt+Enter 换行 |
+
 ## v1.6.0 更新要点
 
 | 变更 | 说明 |
@@ -126,10 +135,10 @@ dotnet build PropertyGridDemo.csproj
 |------|------|
 | **控件库（NuGet）** | https://www.nuget.org/packages/PropertyGridLib |
 | **使用文档（技能文档）** | [skill/SKILL.md](skill/SKILL.md) |
-| **NuGet 包** | `Install-Package PropertyGridLib -Version 1.6.0` |
+| **NuGet 包** | `Install-Package PropertyGridLib -Version 1.9.0` |
 
 ```xml
-<PackageReference Include="PropertyGridLib" Version="1.6.0" />
+<PackageReference Include="PropertyGridLib" Version="1.9.0" />
 ```
 
 ## 许可证

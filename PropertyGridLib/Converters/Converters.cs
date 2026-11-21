@@ -585,9 +585,35 @@ namespace PropertyGridLib.Converters
     }
 
     /// <summary>
-    /// 长文本中间省略：超过阈值时保留「前缀…后缀」，用于绑定源树的键名与类型提示。
+    /// 类型提示专用中间省略：括号内的类型名不超过 7 个字符时原样显示
+    /// （"(Double)" 不再被截成 "(Do…le)"）；超过 7 个字符时保留「前 3 字…后 3 字」，
+    /// 头尾括号保持不变。完整文本由 ToolTip 提供。
+    /// </summary>
+    public class TypeHintEllipsisConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (!(value is string text) || text.Length == 0) return value;
+
+            var wrapped = text.Length > 2 && text[0] == '(' && text[text.Length - 1] == ')';
+            var body = wrapped ? text.Substring(1, text.Length - 2) : text;
+            if (body.Length <= 7) return text;
+
+            var shortBody = body.Substring(0, 3) + "…" + body.Substring(body.Length - 3);
+            return wrapped ? "(" + shortBody + ")" : shortBody;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// 长文本中间省略：超过阈值时保留「前缀…后缀」，用于绑定源树的键名。
     /// 只截中间，前缀（流程/任务层级）和后缀（属性名末尾）都还在，比纯尾部省略更容易认。
-    /// ConverterParameter = 最大字符数（含省略号），默认 20；完整文本由 ToolTip 提供。
+    /// ConverterParameter 支持两种写法：
+    ///   单个数字（旧写法）= 最多显示多少字符（含省略号），前后对半；默认 20。
+    ///   "8,4,4"（新写法）= 8 个字符以内原样显示，超过则前 4 字 + … + 后 4 字。
+    /// 完整文本由 ToolTip 提供。
     /// </summary>
     public class MiddleEllipsisConverter : IValueConverter
     {
@@ -595,12 +621,29 @@ namespace PropertyGridLib.Converters
         {
             if (!(value is string text) || text.Length == 0) return value;
 
-            var max = 20;
-            if (parameter is string raw && int.TryParse(raw, out var parsed) && parsed > 3) max = parsed;
-            if (text.Length <= max) return text;
+            var full = 20;                     // 完整显示的上限
+            var head = 9;
+            var tail = 10;
+            if (parameter is string raw)
+            {
+                var parts = raw.Split(',');
+                if (parts.Length == 3
+                    && int.TryParse(parts[0], out var f) && int.TryParse(parts[1], out var h)
+                    && int.TryParse(parts[2], out var t) && f > 0 && h > 0 && t > 0)
+                {
+                    full = f;
+                    head = h;
+                    tail = t;
+                }
+                else if (int.TryParse(raw, out var parsed) && parsed > 3)
+                {
+                    full = parsed;
+                    head = (parsed - 1) / 2;   // 省略号本身占 1 个字符
+                    tail = parsed - 1 - head;
+                }
+            }
 
-            var head = (max - 1) / 2;          // 省略号本身占 1 个字符
-            var tail = max - 1 - head;
+            if (text.Length <= full) return text;
             return text.Substring(0, head) + "…" + text.Substring(text.Length - tail);
         }
 

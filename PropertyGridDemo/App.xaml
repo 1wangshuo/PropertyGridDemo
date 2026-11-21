@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:PropertyGridDemo.Models"
-             xmlns:conv="clr-namespace:PropertyGridLib.Converters;assembly=PropertyGridLib">
+             xmlns:conv="clr-namespace:PropertyGridLib.Converters;assembly=PropertyGridLib"
+             xmlns:behaviors="clr-namespace:PropertyGridLib.Behaviors;assembly=PropertyGridLib">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -24,7 +25,8 @@
                                       Value="{Binding ValueString, Converter={StaticResource ObjToType}, UpdateSourceTrigger=LostFocus, FallbackValue=0}"
                                       IsReadOnly="{Binding IsReadOnly}"
                                       VerticalContentAlignment="Center"
-                                      Margin="0,0,4,0"/>
+                                      Margin="0,0,4,0"
+                                      behaviors:EnterKeyCommit.IsEnabled="True"/>
                     <ComboBox Grid.Column="1"
                               x:Name="UnitCombo"
                               IsEnabled="{Binding IsReadOnly, Converter={StaticResource InverseBool}}"

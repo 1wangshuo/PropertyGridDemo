@@ -6,7 +6,7 @@
         xmlns:controls="clr-namespace:PropertyGridLib"
         xmlns:loc="clr-namespace:PropertyGridLib.Localization"
         x:Name="DlgRoot"
-        Title="{loc:Localized CollectionEditorTitle}" Height="580" Width="650"
+        Title="{loc:Localized CollectionEditorTitle}" Height="580" Width="735"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource RegionBrush}">
     <hc:Window.Resources>

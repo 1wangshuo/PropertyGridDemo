@@ -4,9 +4,10 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:conv="clr-namespace:PropertyGridLib.Converters"
         xmlns:controls="clr-namespace:PropertyGridLib"
+        xmlns:behaviors="clr-namespace:PropertyGridLib.Behaviors"
         xmlns:loc="clr-namespace:PropertyGridLib.Localization"
         x:Name="DlgRoot"
-        Title="{loc:Localized DictionaryEditorTitle}" Height="600" Width="700"
+        Title="{loc:Localized DictionaryEditorTitle}" Height="600" Width="770"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource RegionBrush}">
     <hc:Window.Resources>
@@ -89,7 +90,8 @@
                             <TextBox x:Name="KeyInputBox"
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
-                                     LostFocus="KeyInputBox_LostFocus"/>
+                                     LostFocus="KeyInputBox_LostFocus"
+                                     behaviors:EnterKeyCommit.IsEnabled="True"/>
                             <Border x:Name="KeyPropertyGridHost"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4"
                                     Visibility="Collapsed">
@@ -123,7 +125,8 @@
                             <TextBox x:Name="ValueInputBox"
                                      VerticalAlignment="Top"
                                      VerticalContentAlignment="Center"
-                                     LostFocus="ValueInputBox_LostFocus"/>
+                                     LostFocus="ValueInputBox_LostFocus"
+                                     behaviors:EnterKeyCommit.IsEnabled="True"/>
                             <Border x:Name="ValuePropertyGridHost"
                                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="4"
                                     Visibility="Collapsed">

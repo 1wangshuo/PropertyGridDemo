@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using PropertyGridLib.Localization;
@@ -116,6 +117,34 @@ namespace PropertyGridLib.Controls
                 FontSize = PropertyGrid.GlobalFontSize,
                 VerticalContentAlignment = VerticalAlignment.Top,
                 IsReadOnly = readOnly
+            };
+
+            // 普通 Enter：提交并关闭；Shift/Ctrl/Alt + Enter：插入换行。
+            // 多行框自身也会处理回车，这里显式分流，保证三种修饰键行为一致。
+            _editBox.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key != Key.Enter && e.Key != Key.Return) return;
+
+                if (readOnly)
+                {
+                    e.Handled = true;
+                    ClosePopup();
+                    return;
+                }
+
+                var mods = Keyboard.Modifiers & (ModifierKeys.Shift | ModifierKeys.Control | ModifierKeys.Alt);
+                if (mods == ModifierKeys.None)
+                {
+                    e.Handled = true;
+                    Commit(pi);
+                    ClosePopup();
+                    return;
+                }
+
+                var caret = _editBox.CaretIndex;
+                _editBox.Text = _editBox.Text.Insert(caret, Environment.NewLine);
+                _editBox.CaretIndex = caret + Environment.NewLine.Length;
+                e.Handled = true;
             };
             rootPanel.Children.Add(_editBox);
             root.Child = rootPanel;
